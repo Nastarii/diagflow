@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diagflow"
+version = "0.1.0"
+description = "Animated diagram framework for Python — declarative storytelling for technical systems"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "networkx>=3.0",
+    "jinja2>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["diagflow*"]
+
+[tool.setuptools.package-data]
+"diagflow.export.templates" = ["*.j2"]

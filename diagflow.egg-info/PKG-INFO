@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: diagflow
+Version: 0.1.0
+Summary: Animated diagram framework for Python — declarative storytelling for technical systems
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: networkx>=3.0
+Requires-Dist: jinja2>=3.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"

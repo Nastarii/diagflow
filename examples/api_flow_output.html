@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Request Flow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      gap: 20px;
+    }
+
+    .diagram-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: #e6edf3;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    svg { display: block; max-width: 100%; }
+
+    /* ── nodes ─────────────────────────────── */
+    .node-wrap { cursor: default; }
+    .node-bg {
+      rx: 10px; ry: 10px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+    .node-label {
+      fill: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      letter-spacing: 0.1px;
+    }
+
+    /* ── edges ─────────────────────────────── */
+    .edge-path {
+      fill: none;
+      stroke: #30363d;
+      stroke-width: 2;
+    }
+    .edge-path.dashed { stroke-dasharray: 6 4; }
+    .edge-label {
+      fill: #6e7681;
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    /* ── controls ──────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-top: 1px solid #21262d;
+      background: #0d1117;
+    }
+
+    .btn {
+      padding: 7px 18px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #c9d1d9;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      white-space: nowrap;
+      outline: none;
+    }
+    .btn:hover:not(:disabled) { background: #30363d; border-color: #6e7681; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #388bfd; }
+
+    .step-info { flex: 1; text-align: center; }
+    .step-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e6edf3;
+      min-height: 22px;
+      transition: opacity 0.25s;
+    }
+    .step-counter { font-size: 11px; color: #484f58; margin-top: 3px; }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 7px;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      transition: background 0.25s, transform 0.25s, border-color 0.25s;
+    }
+    .dot.done  { background: #1f6feb44; border-color: #1f6feb66; }
+    .dot.active { background: #388bfd; border-color: #58a6ff; transform: scale(1.5); }
+
+    .hint {
+      font-size: 11px;
+      color: #21262d;
+      letter-spacing: 0.3px;
+      margin-top: -8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="diagram-title">API Request Flow</div>
+
+<div class="card">
+  <svg id="svg" viewBox="0 0 780 448" width="780" height="448">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#30363d"/>
+      </marker>
+      <marker id="arr-msg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#58a6ff"/>
+      </marker>
+      <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="glow-sm" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- edges (behind nodes) -->
+    
+    <g id="e_89d26b54" opacity="0">
+      <path class="edge-path"
+            d="M 200.0 88.0 C 250.0 88.0 270.0 88.0 320.0 88.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_ac47f377" opacity="0">
+      <path class="edge-path"
+            d="M 460.0 88.0 C 510.0 88.0 530.0 88.0 580.0 88.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_fc17b980" opacity="0">
+      <path class="edge-path"
+            d="M 460.0 88.0 C 510.0 88.0 530.0 224.0 580.0 224.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_6f509895" opacity="0">
+      <path class="edge-path"
+            d="M 390.0 116.0 C 390.0 166.0 650.0 282.0 650.0 332.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+
+    <!-- nodes -->
+    
+    <g id="n_a16e528b" opacity="0" class="node-wrap">
+      <rect class="node-bg"
+            x="60.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#4299e1"
+            fill-opacity="0.18"
+            stroke="#4299e1"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <!-- inner highlight -->
+      <rect x="61.0" y="61.0"
+            width="138" height="20"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            x="130.0"
+            y="88.0">Client</text>
+    </g>
+    
+    <g id="n_19bd01d6" opacity="0" class="node-wrap">
+      <rect class="node-bg"
+            x="320.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#48bb78"
+            fill-opacity="0.18"
+            stroke="#48bb78"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <!-- inner highlight -->
+      <rect x="321.0" y="61.0"
+            width="138" height="20"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            x="390.0"
+            y="88.0">API Gateway</text>
+    </g>
+    
+    <g id="n_752f00f9" opacity="0" class="node-wrap">
+      <rect class="node-bg"
+            x="580.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#ed8936"
+            fill-opacity="0.18"
+            stroke="#ed8936"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <!-- inner highlight -->
+      <rect x="581.0" y="61.0"
+            width="138" height="20"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            x="650.0"
+            y="88.0">Auth Service</text>
+    </g>
+    
+    <g id="n_971e1c61" opacity="0" class="node-wrap">
+      <rect class="node-bg"
+            x="580.0" y="196.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#9f7aea"
+            fill-opacity="0.18"
+            stroke="#9f7aea"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <!-- inner highlight -->
+      <rect x="581.0" y="197.0"
+            width="138" height="20"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            x="650.0"
+            y="224.0">Redis Cache</text>
+    </g>
+    
+    <g id="n_c6fc2b51" opacity="0" class="node-wrap">
+      <rect class="node-bg"
+            x="580.0" y="332.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#f56565"
+            fill-opacity="0.18"
+            stroke="#f56565"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <!-- inner highlight -->
+      <rect x="581.0" y="333.0"
+            width="138" height="20"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            x="650.0"
+            y="360.0">PostgreSQL</text>
+    </g>
+    
+
+    <!-- dynamic message layer -->
+    <g id="msgLayer"></g>
+  </svg>
+
+  
+  <div class="controls">
+    <button class="btn" id="btnPrev" onclick="goPrev()" disabled>← Prev</button>
+    <div class="step-info">
+      <div class="step-name" id="stepName">System Overview</div>
+      <div class="step-counter" id="stepCtr">0 / 5</div>
+      <div class="dots" id="dots">
+        <div class="dot" id="dot0"></div><div class="dot" id="dot1"></div><div class="dot" id="dot2"></div><div class="dot" id="dot3"></div><div class="dot" id="dot4"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btnNext" onclick="goNext()">Next →</button>
+  </div>
+  
+</div>
+
+
+<div class="hint">← → arrow keys to navigate</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+        integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+// ─── data ────────────────────────────────────────────────────────────────────
+const D = {"title": "API Request Flow", "nodes": [{"id": "n_a16e528b", "label": "Client", "x": 60.0, "y": 60.0, "color": "#4299e1", "shape": "rect"}, {"id": "n_19bd01d6", "label": "API Gateway", "x": 320.0, "y": 60.0, "color": "#48bb78", "shape": "rect"}, {"id": "n_752f00f9", "label": "Auth Service", "x": 580.0, "y": 60.0, "color": "#ed8936", "shape": "rect"}, {"id": "n_971e1c61", "label": "Redis Cache", "x": 580.0, "y": 196.0, "color": "#9f7aea", "shape": "rect"}, {"id": "n_c6fc2b51", "label": "PostgreSQL", "x": 580.0, "y": 332.0, "color": "#f56565", "shape": "rect"}], "edges": [{"id": "e_89d26b54", "source": "n_a16e528b", "target": "n_19bd01d6", "label": null, "style": "solid"}, {"id": "e_ac47f377", "source": "n_19bd01d6", "target": "n_752f00f9", "label": null, "style": "solid"}, {"id": "e_fc17b980", "source": "n_19bd01d6", "target": "n_971e1c61", "label": null, "style": "solid"}, {"id": "e_6f509895", "source": "n_19bd01d6", "target": "n_c6fc2b51", "label": null, "style": "solid"}], "steps": [{"title": "System Overview", "animations": [{"type": "fade_in", "target": "n_a16e528b", "at": 0.0}, {"type": "fade_in", "target": "n_19bd01d6", "at": 0.0}, {"type": "fade_in", "target": "n_752f00f9", "at": 0.0}, {"type": "fade_in", "target": "n_971e1c61", "at": 0.0}, {"type": "fade_in", "target": "n_c6fc2b51", "at": 0.0}, {"type": "fade_in", "target": "e_89d26b54", "at": 0.0}, {"type": "fade_in", "target": "e_ac47f377", "at": 0.0}, {"type": "fade_in", "target": "e_fc17b980", "at": 0.0}, {"type": "fade_in", "target": "e_6f509895", "at": 0.0}]}, {"title": "Client makes a request", "animations": [{"type": "send_message", "from": "n_a16e528b", "to": "n_19bd01d6", "label": "GET /api/users", "at": 0.0}]}, {"title": "Token validation", "animations": [{"type": "send_message", "from": "n_19bd01d6", "to": "n_752f00f9", "label": "verify(token)", "at": 0.0}, {"type": "highlight", "target": "n_752f00f9", "color": "#48bb78", "at": 0.9, "duration": 1.0}]}, {"title": "Cache lookup", "animations": [{"type": "send_message", "from": "n_19bd01d6", "to": "n_971e1c61", "label": "GET users:cache", "at": 0.0}]}, {"title": "Database query", "animations": [{"type": "send_message", "from": "n_19bd01d6", "to": "n_c6fc2b51", "label": "SELECT * FROM users", "at": 0.0}, {"type": "highlight", "target": "n_c6fc2b51", "color": "#4299e1", "at": 0.9, "duration": 1.0}]}], "node_w": 140, "node_h": 56};
+const NW = D.node_w, NH = D.node_h;
+
+const npos = {};   // id → {x,y,color}
+D.nodes.forEach(n => { npos[n.id] = n; });
+
+const origColor = {};
+D.nodes.forEach(n => { origColor[n.id] = n.color; });
+
+// ─── state ───────────────────────────────────────────────────────────────────
+let cur = -1;
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+function cx(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? src.x + NW : src.x;
+  return src.x + NW / 2;
+}
+function cy(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return src.y + NH / 2;
+  return dy >= 0 ? src.y + NH : src.y;
+}
+function tx(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? tgt.x : tgt.x + NW;
+  return tgt.x + NW / 2;
+}
+function ty(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return tgt.y + NH / 2;
+  return dy >= 0 ? tgt.y : tgt.y + NH;
+}
+
+// ─── animation engine ────────────────────────────────────────────────────────
+function playStep(idx) {
+  const step = D.steps[idx];
+  if (!step) return;
+  const tl = gsap.timeline();
+
+  step.animations.forEach(anim => {
+    const t = anim.at || 0;
+
+    if (anim.type === 'fade_in') {
+      tl.to('#' + anim.target, { opacity: 1, duration: 0.45, ease: 'power2.out' }, t);
+
+    } else if (anim.type === 'fade_out') {
+      tl.to('#' + anim.target, { opacity: 0, duration: 0.35, ease: 'power2.in' }, t);
+
+    } else if (anim.type === 'highlight') {
+      const sel = '#' + anim.target + ' rect.node-bg';
+      tl.to(sel, { attr: { stroke: anim.color, 'stroke-opacity': 1, 'stroke-width': 2.5 },
+                   filter: 'url(#glow)', duration: 0.25 }, t)
+        .to(sel, { attr: { stroke: origColor[anim.target], 'stroke-opacity': 0.7, 'stroke-width': 1.5 },
+                   filter: 'none', duration: 0.4 }, t + (anim.duration || 1));
+
+    } else if (anim.type === 'send_message') {
+      const s = npos[anim.from], tg = npos[anim.to];
+      if (!s || !tg) return;
+      const x1 = cx(s, tg) + NW * 0, y1 = cy(s, tg);
+      const x2 = tx(s, tg),          y2 = ty(s, tg);
+
+      const id = 'msg_' + Math.random().toString(36).slice(2, 8);
+      const ns = 'http://www.w3.org/2000/svg';
+      const layer = document.getElementById('msgLayer');
+
+      const g = document.createElementNS(ns, 'g');
+      g.id = id;
+
+      const lbl = anim.label || '';
+      const bw = Math.max(lbl.length * 7 + 20, 28);
+      const bh = 22;
+
+      const pill = document.createElementNS(ns, 'rect');
+      pill.setAttribute('width', bw);
+      pill.setAttribute('height', bh);
+      pill.setAttribute('x', -bw / 2);
+      pill.setAttribute('y', -bh / 2);
+      pill.setAttribute('rx', bh / 2);
+      pill.setAttribute('fill', '#1f6feb');
+      pill.setAttribute('stroke', '#388bfd');
+      pill.setAttribute('stroke-width', '1');
+      pill.setAttribute('filter', 'url(#glow-sm)');
+
+      const txt = document.createElementNS(ns, 'text');
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('dominant-baseline', 'middle');
+      txt.setAttribute('fill', '#fff');
+      txt.setAttribute('font-size', '11');
+      txt.setAttribute('font-weight', '600');
+      txt.setAttribute('font-family', 'inherit');
+      txt.textContent = lbl;
+
+      g.appendChild(pill);
+      g.appendChild(txt);
+      layer.appendChild(g);
+
+      gsap.set(g, { x: x1, y: y1, opacity: 0, scale: 0.6 });
+      tl.to(g, { opacity: 1, scale: 1, duration: 0.2, ease: 'back.out(1.5)' }, t)
+        .to(g, { x: x2, y: y2, duration: 0.65, ease: 'power2.inOut' }, t + 0.15)
+        .to(g, { opacity: 0, scale: 0.6, duration: 0.2, ease: 'back.in(1.5)' }, t + 0.75)
+        .call(() => { if (layer.contains(g)) layer.removeChild(g); }, null, t + 1.0);
+    }
+  });
+}
+
+function applyInstant(idx) {
+  const step = D.steps[idx];
+  if (!step) return;
+  step.animations.forEach(a => {
+    if (a.type === 'fade_in')  gsap.set('#' + a.target, { opacity: 1 });
+    if (a.type === 'fade_out') gsap.set('#' + a.target, { opacity: 0 });
+  });
+}
+
+function resetAll() {
+  gsap.killTweensOf('*');
+  document.getElementById('msgLayer').innerHTML = '';
+  D.nodes.forEach(n => {
+    gsap.set('#' + n.id, { opacity: 0 });
+    const r = document.querySelector('#' + n.id + ' rect.node-bg');
+    if (r) {
+      r.setAttribute('stroke', origColor[n.id]);
+      r.setAttribute('stroke-opacity', '0.7');
+      r.setAttribute('stroke-width', '1.5');
+      r.removeAttribute('filter');
+    }
+  });
+  D.edges.forEach(e => gsap.set('#' + e.id, { opacity: 0 }));
+}
+
+// ─── navigation ──────────────────────────────────────────────────────────────
+function updateUI() {
+  const total = D.steps.length;
+  document.getElementById('btnPrev').disabled = cur <= 0;
+  document.getElementById('btnNext').disabled = cur >= total - 1;
+  const step = D.steps[cur] || {};
+  const nameEl = document.getElementById('stepName');
+  if (nameEl) {
+    nameEl.style.opacity = '0';
+    setTimeout(() => { nameEl.textContent = step.title || ''; nameEl.style.opacity = '1'; }, 120);
+  }
+  const ctrEl = document.getElementById('stepCtr');
+  if (ctrEl) ctrEl.textContent = `${cur + 1} / ${total}`;
+
+  D.steps.forEach((_, i) => {
+    const d = document.getElementById('dot' + i);
+    if (!d) return;
+    if (i < cur)       d.className = 'dot done';
+    else if (i === cur) d.className = 'dot active';
+    else                d.className = 'dot';
+  });
+}
+
+function goNext() {
+  if (cur >= D.steps.length - 1) return;
+  cur++;
+  playStep(cur);
+  updateUI();
+}
+
+function goPrev() {
+  if (cur <= 0) return;
+  const target = cur - 1;
+  resetAll();
+  for (let i = 0; i < target; i++) applyInstant(i);
+  cur = target;
+  playStep(cur);
+  updateUI();
+}
+
+// ─── keyboard ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); goPrev(); }
+});
+
+// ─── boot ─────────────────────────────────────────────────────────────────────
+goNext();
+</script>
+</body>
+</html>

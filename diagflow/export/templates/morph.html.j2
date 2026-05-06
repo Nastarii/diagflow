@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #21262d;
+      --border2: #30363d;
+      --text:    #e6edf3;
+      --muted:   #6e7681;
+      --blue:    #388bfd;
+      --green:   #2ea043;
+      --red:     #f85149;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      gap: 20px;
+    }
+
+    /* ── header ──────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 15px;
+    }
+    .state-badge {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border2);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      transition: background 0.4s, border-color 0.4s, color 0.4s;
+    }
+    .badge-d1 { background: #1f2d3d; border-color: #4299e1; color: #4299e1; }
+    .badge-d2 { background: #1a2e1c; border-color: #48bb78; color: #48bb78; }
+    .badge-mid { background: var(--surface); border-color: var(--border2); color: var(--muted); }
+    .arrow-label {
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    /* ── card ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+      position: relative;
+    }
+
+    svg { display: block; max-width: 100%; }
+
+    /* ── node elements ──────────────────────────────────────── */
+    .node-bg {
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+      transition: filter 0.3s;
+    }
+    .node-label {
+      fill: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+
+    /* ── edge elements ──────────────────────────────────────── */
+    .edge-path {
+      fill: none;
+      stroke: var(--border2);
+      stroke-width: 2;
+    }
+    .edge-path.dashed { stroke-dasharray: 6 4; }
+    .edge-lbl {
+      fill: var(--muted);
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    /* ── progress bar ───────────────────────────────────────── */
+    .progress-rail {
+      height: 3px;
+      background: var(--border);
+      width: 100%;
+    }
+    .progress-fill {
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, #4299e1, #48bb78);
+      transition: background 0.3s;
+    }
+
+    /* ── controls ───────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 7px 18px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: #21262d;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      outline: none;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--border2); border-color: #6e7681; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-play  { background: #1f6feb; border-color: var(--blue); color: #fff; }
+    .btn-play:hover { background: var(--blue); }
+    .btn-reset { background: #1c1c1c; }
+
+    .status-text {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 120px;
+    }
+
+    /* ── diff legend ─────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 18px;
+      font-size: 11px;
+      color: var(--muted);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- header badges -->
+<div class="header">
+  <div class="state-badge badge-d1" id="badge1">{{ d1_title or "State 1" }}</div>
+  <div class="arrow-label">→</div>
+  <div class="state-badge badge-d2" id="badge2">{{ d2_title or "State 2" }}</div>
+</div>
+
+<div class="card">
+  <!-- progress bar -->
+  <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+
+  <svg id="morphSvg"
+       viewBox="0 0 {{ svg_w }} {{ svg_h }}"
+       width="{{ svg_w }}" height="{{ svg_h }}">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#30363d"/>
+      </marker>
+      <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- D1 edges (start visible) -->
+    {% for e in edges %}{% if e.role == "d1_edge" %}
+    <g id="{{ e.id }}" opacity="1">
+      <path class="edge-path{% if e.style == 'dashed' %} dashed{% endif %}"
+            d="{{ e.path_d }}" marker-end="url(#arr)"/>
+      {% if e.label %}<text class="edge-lbl"
+        x="{{ (e.path_d.split()[1]|float + e.path_d.split()[-2]|float) / 2 }}"
+        y="{{ (e.path_d.split()[2]|float + e.path_d.split()[-1]|float) / 2 - 10 }}">{{ e.label }}</text>{% endif %}
+    </g>
+    {% endif %}{% endfor %}
+
+    <!-- D2 edges (start hidden) -->
+    {% for e in edges %}{% if e.role == "d2_edge" %}
+    <g id="{{ e.id }}" opacity="0">
+      <path class="edge-path{% if e.style == 'dashed' %} dashed{% endif %}"
+            d="{{ e.path_d }}" marker-end="url(#arr)"/>
+      {% if e.label %}<text class="edge-lbl"
+        x="{{ (e.path_d.split()[1]|float + e.path_d.split()[-2]|float) / 2 }}"
+        y="{{ (e.path_d.split()[2]|float + e.path_d.split()[-1]|float) / 2 - 10 }}">{{ e.label }}</text>{% endif %}
+    </g>
+    {% endif %}{% endfor %}
+
+    <!-- Nodes -->
+    {% for node in nodes %}
+    <g id="{{ node.id }}"
+       opacity="{{ '0' if node.role == 'add' else '1' }}">
+      <rect class="node-bg"
+            id="{{ node.id }}_rect"
+            x="{{ node.x }}" y="{{ node.y }}"
+            width="{{ node_w }}" height="{{ node_h }}"
+            rx="10" ry="10"
+            fill="{{ node.color }}"
+            fill-opacity="0.18"
+            stroke="{{ node.color }}"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <rect x="{{ node.x + 1 }}" y="{{ node.y + 1 }}"
+            width="{{ node_w - 2 }}" height="18"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            id="{{ node.id }}_lbl"
+            x="{{ node.x + node_w / 2 }}"
+            y="{{ node.y + node_h / 2 }}">{{ node.label }}</text>
+    </g>
+    {% endfor %}
+  </svg>
+
+  <div class="controls">
+    <button class="btn btn-play"  id="btnPlay"  onclick="play()">&#9654; Play Morph</button>
+    <button class="btn btn-reset" id="btnReset" onclick="reset()" disabled>&#8635; Reset</button>
+    <div class="status-text" id="statusText">D1 state — click Play to morph</div>
+  </div>
+</div>
+
+<!-- diff legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#388bfd"></div><span>Persistent</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#48bb78"></div><span>Added</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#f85149"></div><span>Removed</span>
+  </div>
+  <div class="legend-item" style="font-style:italic">
+    {{ diff_summary | replace('\n', ' &nbsp;|&nbsp; ') }}
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+  integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+// ── data ─────────────────────────────────────────────────────────────────────
+const M = {{ morph_json | safe }};
+const NW = M.node_w, NH = M.node_h;
+
+// Index nodes by id for fast lookup
+const nodeIndex = {};
+M.nodes.forEach(n => { nodeIndex[n.id] = n; });
+
+// Track original colors for reset
+const origColor = {};
+M.nodes.forEach(n => { origColor[n.id] = n.color; });
+
+// ── GSAP timeline ─────────────────────────────────────────────────────────────
+let tl = null;
+let playing = false;
+let morphed = false;
+
+function buildTimeline() {
+  tl = gsap.timeline({
+    paused: true,
+    onUpdate: updateProgress,
+    onComplete: onMorphComplete,
+  });
+
+  // progress bar
+  tl.to('#progressFill', { width: '100%', ease: 'none', duration: M.config.duration }, 0);
+
+  M.animations.forEach(a => {
+    const el = document.getElementById(a.id);
+    if (!el) return;
+
+    switch (a.type) {
+
+      case 'fade_node': {
+        tl.to(el, {
+          opacity:         a.to_opacity,
+          scale:           a.scale ?? 1,
+          transformOrigin: '50% 50%',
+          duration:        a.dur,
+          ease:            a.ease || 'power2.out',
+        }, a.at);
+        break;
+      }
+
+      case 'move_node': {
+        const n = nodeIndex[a.id];
+        // Move by offset (GSAP adds a CSS translate on top of SVG x/y attrs)
+        tl.to(el, {
+          x:        a.dx,
+          y:        a.dy,
+          duration: a.dur,
+          ease:     a.ease || M.config.easing,
+        }, a.at);
+
+        // Optional color morph
+        if (a.to_color) {
+          const rectEl = document.getElementById(a.id + '_rect');
+          if (rectEl) {
+            tl.to(rectEl, {
+              attr: { fill: a.to_color, stroke: a.to_color },
+              duration: a.dur * 0.65,
+              ease: 'power2.inOut',
+            }, a.at + a.dur * 0.15);
+          }
+        }
+
+        // Optional label morph (cross-fade)
+        if (a.to_label) {
+          const lblEl = document.getElementById(a.id + '_lbl');
+          if (lblEl) {
+            tl.to(lblEl, { opacity: 0, duration: 0.18 }, a.at + a.dur * 0.38)
+              .call(() => { lblEl.textContent = a.to_label; }, null, a.at + a.dur * 0.50)
+              .to(lblEl, { opacity: 1, duration: 0.18 }, a.at + a.dur * 0.52);
+          }
+        }
+        break;
+      }
+
+      case 'add_node': {
+        tl.fromTo(el,
+          { opacity: 0, scale: 0.55, transformOrigin: '50% 50%' },
+          { opacity: 1, scale: 1,    transformOrigin: '50% 50%',
+            duration: a.dur, ease: 'back.out(1.7)' },
+          a.at
+        );
+        break;
+      }
+
+      case 'fade_edge': {
+        tl.to(el, { opacity: a.to_opacity, duration: a.dur }, a.at);
+        break;
+      }
+    }
+  });
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+function updateProgress() {
+  if (!tl) return;
+  const pct = (tl.time() / tl.duration() * 100).toFixed(1);
+  document.getElementById('statusText').textContent =
+    `Morphing… ${pct}%`;
+}
+
+function onMorphComplete() {
+  playing = false;
+  morphed = true;
+  document.getElementById('btnPlay').disabled  = true;
+  document.getElementById('btnReset').disabled = false;
+  document.getElementById('statusText').textContent = 'D2 state — click Reset to replay';
+
+  // Swap header badge styles
+  document.getElementById('badge1').className = 'state-badge badge-mid';
+  document.getElementById('badge2').className = 'state-badge badge-d2';
+}
+
+function play() {
+  if (playing || morphed) return;
+  playing = true;
+  document.getElementById('btnPlay').disabled  = true;
+  document.getElementById('btnReset').disabled = true;
+
+  if (!tl) buildTimeline();
+  tl.play(0);
+}
+
+function reset() {
+  if (tl) { tl.kill(); tl = null; }
+  morphed = false; playing = false;
+
+  // Reset progress bar
+  gsap.set('#progressFill', { width: '0%' });
+
+  // Reset all node elements
+  M.nodes.forEach(n => {
+    const el = document.getElementById(n.id);
+    if (!el) return;
+
+    // Remove GSAP transform (back to SVG x/y attrs)
+    gsap.set(el, { x: 0, y: 0, opacity: n.role === 'add' ? 0 : 1, scale: 1, clearProps: 'scale' });
+
+    // Restore original color
+    const rectEl = document.getElementById(n.id + '_rect');
+    if (rectEl) {
+      rectEl.setAttribute('fill',   origColor[n.id]);
+      rectEl.setAttribute('stroke', origColor[n.id]);
+    }
+
+    // Restore original label
+    const lblEl = document.getElementById(n.id + '_lbl');
+    if (lblEl) lblEl.textContent = n.label;
+  });
+
+  // Reset edges
+  M.edges.forEach(e => {
+    const el = document.getElementById(e.id);
+    if (el) gsap.set(el, { opacity: e.role === 'd1_edge' ? 1 : 0 });
+  });
+
+  // Restore badges
+  document.getElementById('badge1').className = 'state-badge badge-d1';
+  document.getElementById('badge2').className = 'state-badge badge-d2';
+
+  document.getElementById('btnPlay').disabled  = false;
+  document.getElementById('btnReset').disabled = true;
+  document.getElementById('statusText').textContent = 'D1 state — click Play to morph';
+}
+
+// keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); play(); }
+  if (e.key === 'r' || e.key === 'R')     { reset(); }
+});
+</script>
+</body>
+</html>
