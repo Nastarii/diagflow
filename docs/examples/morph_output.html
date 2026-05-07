@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>v1: Simple Architecture → v2: Scaled Architecture</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #21262d;
+      --border2: #30363d;
+      --text:    #e6edf3;
+      --muted:   #6e7681;
+      --blue:    #388bfd;
+      --green:   #2ea043;
+      --red:     #f85149;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      gap: 20px;
+    }
+
+    /* ── header ──────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 15px;
+    }
+    .state-badge {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border2);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      transition: background 0.4s, border-color 0.4s, color 0.4s;
+    }
+    .badge-d1 { background: #1f2d3d; border-color: #4299e1; color: #4299e1; }
+    .badge-d2 { background: #1a2e1c; border-color: #48bb78; color: #48bb78; }
+    .badge-mid { background: var(--surface); border-color: var(--border2); color: var(--muted); }
+    .arrow-label {
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    /* ── card ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+      position: relative;
+    }
+
+    svg { display: block; max-width: 100%; }
+
+    /* ── node elements ──────────────────────────────────────── */
+    .node-bg {
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+      transition: filter 0.3s;
+    }
+    .node-label {
+      fill: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+
+    /* ── edge elements ──────────────────────────────────────── */
+    .edge-path {
+      fill: none;
+      stroke: var(--border2);
+      stroke-width: 2;
+    }
+    .edge-path.dashed { stroke-dasharray: 6 4; }
+    .edge-lbl {
+      fill: var(--muted);
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    /* ── progress bar ───────────────────────────────────────── */
+    .progress-rail {
+      height: 3px;
+      background: var(--border);
+      width: 100%;
+    }
+    .progress-fill {
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, #4299e1, #48bb78);
+      transition: background 0.3s;
+    }
+
+    /* ── controls ───────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 7px 18px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: #21262d;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      outline: none;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--border2); border-color: #6e7681; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-play  { background: #1f6feb; border-color: var(--blue); color: #fff; }
+    .btn-play:hover { background: var(--blue); }
+    .btn-reset { background: #1c1c1c; }
+
+    .status-text {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 120px;
+    }
+
+    /* ── diff legend ─────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 18px;
+      font-size: 11px;
+      color: var(--muted);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- header badges -->
+<div class="header">
+  <div class="state-badge badge-d1" id="badge1">v1: Simple Architecture</div>
+  <div class="arrow-label">→</div>
+  <div class="state-badge badge-d2" id="badge2">v2: Scaled Architecture</div>
+</div>
+
+<div class="card">
+  <!-- progress bar -->
+  <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+
+  <svg id="morphSvg"
+       viewBox="0 0 780 448"
+       width="780" height="448">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#30363d"/>
+      </marker>
+      <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- D1 edges (start visible) -->
+    
+    <g id="d1_e_44d86b80" opacity="1">
+      <path class="edge-path"
+            d="M 200.0 88.0 C 250.0 88.0 270.0 88.0 320.0 88.0" marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="d1_e_014c456f" opacity="1">
+      <path class="edge-path"
+            d="M 460.0 88.0 C 510.0 88.0 530.0 88.0 580.0 88.0" marker-end="url(#arr)"/>
+      
+    </g>
+    
+
+    <!-- D2 edges (start hidden) -->
+    
+    <g id="d2_e_e2edc93b" opacity="0">
+      <path class="edge-path"
+            d="M 200.0 88.0 C 250.0 88.0 270.0 88.0 320.0 88.0" marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="d2_e_aa1132da" opacity="0">
+      <path class="edge-path"
+            d="M 390.0 116.0 C 390.0 166.0 650.0 282.0 650.0 332.0" marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="d2_e_8164e3ba" opacity="0">
+      <path class="edge-path"
+            d="M 460.0 88.0 C 510.0 88.0 530.0 224.0 580.0 224.0" marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="d2_e_01fdb047" opacity="0">
+      <path class="edge-path"
+            d="M 460.0 88.0 C 510.0 88.0 530.0 88.0 580.0 88.0" marker-end="url(#arr)"/>
+      
+    </g>
+    
+
+    <!-- Nodes -->
+    
+    <g id="n_d0ecf132"
+       opacity="1">
+      <rect class="node-bg"
+            id="n_d0ecf132_rect"
+            x="60.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#4299e1"
+            fill-opacity="0.18"
+            stroke="#4299e1"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <rect x="61.0" y="61.0"
+            width="138" height="18"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            id="n_d0ecf132_lbl"
+            x="130.0"
+            y="88.0">Client</text>
+    </g>
+    
+    <g id="n_328cd213"
+       opacity="1">
+      <rect class="node-bg"
+            id="n_328cd213_rect"
+            x="580.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#ed8936"
+            fill-opacity="0.18"
+            stroke="#ed8936"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <rect x="581.0" y="61.0"
+            width="138" height="18"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            id="n_328cd213_lbl"
+            x="650.0"
+            y="88.0">Database</text>
+    </g>
+    
+    <g id="n_d7dea3b5"
+       opacity="1">
+      <rect class="node-bg"
+            id="n_d7dea3b5_rect"
+            x="320.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#48bb78"
+            fill-opacity="0.18"
+            stroke="#48bb78"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <rect x="321.0" y="61.0"
+            width="138" height="18"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            id="n_d7dea3b5_lbl"
+            x="390.0"
+            y="88.0">API</text>
+    </g>
+    
+    <g id="n_8b401c4a"
+       opacity="0">
+      <rect class="node-bg"
+            id="n_8b401c4a_rect"
+            x="580.0" y="196.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#ed8936"
+            fill-opacity="0.18"
+            stroke="#ed8936"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <rect x="581.0" y="197.0"
+            width="138" height="18"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            id="n_8b401c4a_lbl"
+            x="650.0"
+            y="224.0">Auth Service</text>
+    </g>
+    
+    <g id="n_3e2711a4"
+       opacity="0">
+      <rect class="node-bg"
+            id="n_3e2711a4_rect"
+            x="580.0" y="60.0"
+            width="140" height="56"
+            rx="10" ry="10"
+            fill="#9f7aea"
+            fill-opacity="0.18"
+            stroke="#9f7aea"
+            stroke-opacity="0.7"
+            stroke-width="1.5"/>
+      <rect x="581.0" y="61.0"
+            width="138" height="18"
+            rx="9" ry="9"
+            fill="white" fill-opacity="0.05"/>
+      <text class="node-label"
+            id="n_3e2711a4_lbl"
+            x="650.0"
+            y="88.0">Redis Cache</text>
+    </g>
+    
+  </svg>
+
+  <div class="controls">
+    <button class="btn btn-play"  id="btnPlay"  onclick="play()">&#9654; Play Morph</button>
+    <button class="btn btn-reset" id="btnReset" onclick="reset()" disabled>&#8635; Reset</button>
+    <div class="status-text" id="statusText">D1 state — click Play to morph</div>
+  </div>
+</div>
+
+<!-- diff legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#388bfd"></div><span>Persistent</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#48bb78"></div><span>Added</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#f85149"></div><span>Removed</span>
+  </div>
+  <div class="legend-item" style="font-style:italic">
+    nodes  persist:3  add:2  remove:0 &nbsp;|&nbsp; edges  persist:2  add:2  remove:0
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+  integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+// ── data ─────────────────────────────────────────────────────────────────────
+const M = {"d1_title": "v1: Simple Architecture", "d2_title": "v2: Scaled Architecture", "config": {"duration": 1.8, "stagger": 0.1, "easing": "power2.inOut"}, "nodes": [{"id": "n_d0ecf132", "label": "Client", "x": 60.0, "y": 60.0, "color": "#4299e1", "role": "persist", "to_x": 60.0, "to_y": 60.0, "to_label": "Client", "to_color": "#4299e1"}, {"id": "n_328cd213", "label": "Database", "x": 580.0, "y": 60.0, "color": "#ed8936", "role": "persist", "to_x": 580.0, "to_y": 332.0, "to_label": "Database", "to_color": "#f56565"}, {"id": "n_d7dea3b5", "label": "API", "x": 320.0, "y": 60.0, "color": "#48bb78", "role": "persist", "to_x": 320.0, "to_y": 60.0, "to_label": "API Gateway", "to_color": "#48bb78"}, {"id": "n_8b401c4a", "label": "Auth Service", "x": 580.0, "y": 196.0, "color": "#ed8936", "role": "add"}, {"id": "n_3e2711a4", "label": "Redis Cache", "x": 580.0, "y": 60.0, "color": "#9f7aea", "role": "add"}], "edges": [{"id": "d1_e_44d86b80", "path_d": "M 200.0 88.0 C 250.0 88.0 270.0 88.0 320.0 88.0", "label": null, "style": "solid", "role": "d1_edge"}, {"id": "d1_e_014c456f", "path_d": "M 460.0 88.0 C 510.0 88.0 530.0 88.0 580.0 88.0", "label": null, "style": "solid", "role": "d1_edge"}, {"id": "d2_e_e2edc93b", "path_d": "M 200.0 88.0 C 250.0 88.0 270.0 88.0 320.0 88.0", "label": null, "style": "solid", "role": "d2_edge"}, {"id": "d2_e_aa1132da", "path_d": "M 390.0 116.0 C 390.0 166.0 650.0 282.0 650.0 332.0", "label": null, "style": "solid", "role": "d2_edge"}, {"id": "d2_e_8164e3ba", "path_d": "M 460.0 88.0 C 510.0 88.0 530.0 224.0 580.0 224.0", "label": null, "style": "solid", "role": "d2_edge"}, {"id": "d2_e_01fdb047", "path_d": "M 460.0 88.0 C 510.0 88.0 530.0 88.0 580.0 88.0", "label": null, "style": "solid", "role": "d2_edge"}], "animations": [{"type": "fade_edge", "id": "d1_e_44d86b80", "to_opacity": 0, "at": 0.0, "dur": 0.22}, {"type": "fade_edge", "id": "d1_e_014c456f", "to_opacity": 0, "at": 0.03, "dur": 0.22}, {"type": "move_node", "id": "n_328cd213", "dx": 0.0, "dy": 272.0, "at": 0.395, "dur": 0.742, "ease": "power2.inOut", "to_color": "#f56565"}, {"type": "move_node", "id": "n_d7dea3b5", "dx": 0.0, "dy": 0.0, "at": 0.43, "dur": 0.742, "ease": "power2.inOut", "to_label": "API Gateway"}, {"type": "add_node", "id": "n_8b401c4a", "at": 1.17, "dur": 0.292}, {"type": "add_node", "id": "n_3e2711a4", "at": 1.27, "dur": 0.292}, {"type": "fade_edge", "id": "d2_e_e2edc93b", "to_opacity": 1, "at": 1.376, "dur": 0.3}, {"type": "fade_edge", "id": "d2_e_aa1132da", "to_opacity": 1, "at": 1.416, "dur": 0.3}, {"type": "fade_edge", "id": "d2_e_8164e3ba", "to_opacity": 1, "at": 1.456, "dur": 0.3}, {"type": "fade_edge", "id": "d2_e_01fdb047", "to_opacity": 1, "at": 1.496, "dur": 0.3}], "node_w": 140, "node_h": 56, "svg_w": 780, "svg_h": 448, "diff_summary": "nodes  persist:3  add:2  remove:0\nedges  persist:2  add:2  remove:0"};
+const NW = M.node_w, NH = M.node_h;
+
+// Index nodes by id for fast lookup
+const nodeIndex = {};
+M.nodes.forEach(n => { nodeIndex[n.id] = n; });
+
+// Track original colors for reset
+const origColor = {};
+M.nodes.forEach(n => { origColor[n.id] = n.color; });
+
+// ── GSAP timeline ─────────────────────────────────────────────────────────────
+let tl = null;
+let playing = false;
+let morphed = false;
+
+function buildTimeline() {
+  tl = gsap.timeline({
+    paused: true,
+    onUpdate: updateProgress,
+    onComplete: onMorphComplete,
+  });
+
+  // progress bar
+  tl.to('#progressFill', { width: '100%', ease: 'none', duration: M.config.duration }, 0);
+
+  M.animations.forEach(a => {
+    const el = document.getElementById(a.id);
+    if (!el) return;
+
+    switch (a.type) {
+
+      case 'fade_node': {
+        tl.to(el, {
+          opacity:         a.to_opacity,
+          scale:           a.scale ?? 1,
+          transformOrigin: '50% 50%',
+          duration:        a.dur,
+          ease:            a.ease || 'power2.out',
+        }, a.at);
+        break;
+      }
+
+      case 'move_node': {
+        const n = nodeIndex[a.id];
+        // Move by offset (GSAP adds a CSS translate on top of SVG x/y attrs)
+        tl.to(el, {
+          x:        a.dx,
+          y:        a.dy,
+          duration: a.dur,
+          ease:     a.ease || M.config.easing,
+        }, a.at);
+
+        // Optional color morph
+        if (a.to_color) {
+          const rectEl = document.getElementById(a.id + '_rect');
+          if (rectEl) {
+            tl.to(rectEl, {
+              attr: { fill: a.to_color, stroke: a.to_color },
+              duration: a.dur * 0.65,
+              ease: 'power2.inOut',
+            }, a.at + a.dur * 0.15);
+          }
+        }
+
+        // Optional label morph (cross-fade)
+        if (a.to_label) {
+          const lblEl = document.getElementById(a.id + '_lbl');
+          if (lblEl) {
+            tl.to(lblEl, { opacity: 0, duration: 0.18 }, a.at + a.dur * 0.38)
+              .call(() => { lblEl.textContent = a.to_label; }, null, a.at + a.dur * 0.50)
+              .to(lblEl, { opacity: 1, duration: 0.18 }, a.at + a.dur * 0.52);
+          }
+        }
+        break;
+      }
+
+      case 'add_node': {
+        tl.fromTo(el,
+          { opacity: 0, scale: 0.55, transformOrigin: '50% 50%' },
+          { opacity: 1, scale: 1,    transformOrigin: '50% 50%',
+            duration: a.dur, ease: 'back.out(1.7)' },
+          a.at
+        );
+        break;
+      }
+
+      case 'fade_edge': {
+        tl.to(el, { opacity: a.to_opacity, duration: a.dur }, a.at);
+        break;
+      }
+    }
+  });
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+function updateProgress() {
+  if (!tl) return;
+  const pct = (tl.time() / tl.duration() * 100).toFixed(1);
+  document.getElementById('statusText').textContent =
+    `Morphing… ${pct}%`;
+}
+
+function onMorphComplete() {
+  playing = false;
+  morphed = true;
+  document.getElementById('btnPlay').disabled  = true;
+  document.getElementById('btnReset').disabled = false;
+  document.getElementById('statusText').textContent = 'D2 state — click Reset to replay';
+
+  // Swap header badge styles
+  document.getElementById('badge1').className = 'state-badge badge-mid';
+  document.getElementById('badge2').className = 'state-badge badge-d2';
+}
+
+function play() {
+  if (playing || morphed) return;
+  playing = true;
+  document.getElementById('btnPlay').disabled  = true;
+  document.getElementById('btnReset').disabled = true;
+
+  if (!tl) buildTimeline();
+  tl.play(0);
+}
+
+function reset() {
+  if (tl) { tl.kill(); tl = null; }
+  morphed = false; playing = false;
+
+  // Reset progress bar
+  gsap.set('#progressFill', { width: '0%' });
+
+  // Reset all node elements
+  M.nodes.forEach(n => {
+    const el = document.getElementById(n.id);
+    if (!el) return;
+
+    // Remove GSAP transform (back to SVG x/y attrs)
+    gsap.set(el, { x: 0, y: 0, opacity: n.role === 'add' ? 0 : 1, scale: 1, clearProps: 'scale' });
+
+    // Restore original color
+    const rectEl = document.getElementById(n.id + '_rect');
+    if (rectEl) {
+      rectEl.setAttribute('fill',   origColor[n.id]);
+      rectEl.setAttribute('stroke', origColor[n.id]);
+    }
+
+    // Restore original label
+    const lblEl = document.getElementById(n.id + '_lbl');
+    if (lblEl) lblEl.textContent = n.label;
+  });
+
+  // Reset edges
+  M.edges.forEach(e => {
+    const el = document.getElementById(e.id);
+    if (el) gsap.set(el, { opacity: e.role === 'd1_edge' ? 1 : 0 });
+  });
+
+  // Restore badges
+  document.getElementById('badge1').className = 'state-badge badge-d1';
+  document.getElementById('badge2').className = 'state-badge badge-d2';
+
+  document.getElementById('btnPlay').disabled  = false;
+  document.getElementById('btnReset').disabled = true;
+  document.getElementById('statusText').textContent = 'D1 state — click Play to morph';
+}
+
+// keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); play(); }
+  if (e.key === 'r' || e.key === 'R')     { reset(); }
+});
+</script>
+</body>
+</html>

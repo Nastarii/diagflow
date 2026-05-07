@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagflow — Layout Showcase</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0e17;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      gap: 18px;
+    }
+
+    /* ── title ─────────────────────────────── */
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #e6edf3;
+      opacity: 0.9;
+    }
+
+    /* ── card ──────────────────────────────── */
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 8px 32px rgba(0,0,0,0.6),
+        0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    svg { display: block; max-width: 100%; overflow: visible; }
+
+    /* ── nodes ─────────────────────────────── */
+    .node-wrap {
+      cursor: default;
+      will-change: transform;
+    }
+    .node-wrap.expandable { cursor: pointer; }
+    .node-bg { transition: filter 0.2s; }
+    .node-label {
+      fill: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+      letter-spacing: 0.1px;
+    }
+    .node-subtitle {
+      fill: rgba(255,255,255,0.55);
+      font-size: 10.5px;
+      font-weight: 400;
+      pointer-events: none;
+      letter-spacing: 0.2px;
+    }
+    .node-icon {
+      pointer-events: none;
+      dominant-baseline: middle;
+      text-anchor: middle;
+    }
+
+    /* ── layout: minimal — dark label text ─── */
+    .layout-minimal .node-label  { fill: #fff; }
+    .layout-minimal .node-subtitle { fill: rgba(255,255,255,0.6); }
+
+    /* ── edges ─────────────────────────────── */
+    .edge-path {
+      fill: none;
+      stroke: #1f2937;
+      stroke-width: 1.8;
+    }
+    .edge-path.dashed { stroke-dasharray: 6 4; }
+    .edge-label {
+      fill: #4b5563;
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    /* ── controls ──────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 22px;
+      border-top: 1px solid #1f2937;
+      background: #0d1117;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #9ca3af;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+      outline: none;
+      user-select: none;
+    }
+    .btn:hover:not(:disabled) {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+      transform: translateY(-1px);
+    }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-primary {
+      background: #1d4ed8;
+      border-color: #2563eb;
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+
+    .step-info { flex: 1; text-align: center; }
+    .step-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e6edf3;
+      min-height: 20px;
+      transition: opacity 0.2s ease;
+      letter-spacing: -0.2px;
+    }
+    .step-counter {
+      font-size: 11px;
+      color: #374151;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .dots {
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .dot {
+      height: 4px;
+      border-radius: 2px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      transition: background 0.25s, width 0.3s cubic-bezier(0.34,1.56,0.64,1), border-color 0.25s;
+      width: 14px;
+    }
+    .dot.done  { background: #1d4ed844; border-color: #1d4ed866; width: 14px; }
+    .dot.active { background: #3b82f6; border-color: #60a5fa; width: 24px; }
+
+    .hint {
+      font-size: 11px;
+      color: #1f2937;
+      letter-spacing: 0.4px;
+      margin-top: -6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="diagram-title">Diagflow — Layout Showcase</div>
+
+<div class="card">
+  <svg id="svg" viewBox="0 0 780 876" width="780" height="876">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#374151"/>
+      </marker>
+      <marker id="arr-msg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#60a5fa"/>
+      </marker>
+
+      <!-- glow filters -->
+      <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="glow-sm" x="-25%" y="-25%" width="150%" height="150%">
+        <feGaussianBlur stdDeviation="2.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="glow-lg" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+
+      <!-- material elevation shadow -->
+      <filter id="shadow-md" x="-30%" y="-30%" width="160%" height="180%">
+        <feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#000" flood-opacity="0.5"/>
+      </filter>
+
+      <!-- gradient defs (one per gradient-layout node) -->
+      
+      <linearGradient id="grad_n_5bbccaae" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#48bb78" stop-opacity="1"/>
+        <stop offset="100%" stop-color="#48bb78" stop-opacity="0.55"/>
+      </linearGradient>
+      
+      <linearGradient id="grad_n_533bc17d" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#ed8936" stop-opacity="1"/>
+        <stop offset="100%" stop-color="#ed8936" stop-opacity="0.55"/>
+      </linearGradient>
+      
+      <linearGradient id="grad_n_1f4cb390" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#9f7aea" stop-opacity="1"/>
+        <stop offset="100%" stop-color="#9f7aea" stop-opacity="0.55"/>
+      </linearGradient>
+      
+    </defs>
+
+    <!-- edges (behind nodes) -->
+    
+    <g id="e_d9dec115" opacity="0">
+      <path class="edge-path"
+            d="M 130.0 544.0 C 130.0 594.0 390.0 690.0 390.0 740.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_74798c4a" opacity="0">
+      <path class="edge-path"
+            d="M 200.0 506.0 C 250.0 506.0 270.0 642.0 320.0 642.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_9dedda07" opacity="0">
+      <path class="edge-path"
+            d="M 200.0 360.0 C 250.0 360.0 270.0 496.0 320.0 496.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_cccfa207" opacity="0">
+      <path class="edge-path"
+            d="M 390.0 468.0 C 390.0 418.0 650.0 166.0 650.0 116.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_aff6a640" opacity="0">
+      <path class="edge-path"
+            d="M 200.0 234.0 C 250.0 234.0 270.0 234.0 320.0 234.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_7b637741" opacity="0">
+      <path class="edge-path"
+            d="M 460.0 234.0 C 510.0 234.0 530.0 234.0 580.0 234.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_94476752" opacity="0">
+      <path class="edge-path"
+            d="M 130.0 136.0 C 130.0 186.0 390.0 282.0 390.0 332.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+    <g id="e_1ec9f57c" opacity="0">
+      <path class="edge-path"
+            d="M 200.0 98.0 C 250.0 98.0 270.0 98.0 320.0 98.0"
+            marker-end="url(#arr)"/>
+      
+    </g>
+    
+
+    <!-- nodes -->
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_f01fc7ff" opacity="0"
+       class="node-wrap layout-glass expandable"
+       data-cx="130.0"
+       data-cy="506.0"
+       data-nx="60.0"
+       data-ny="468.0"
+       data-base-height="76"
+       data-description="Handles all inbound HTTP/gRPC traffic. Enforces rate limits, TLS termination, and request tracing via OpenTelemetry."
+       data-hover-scale="1.06"
+       data-hover-glow="true"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="60.0" y="468.0"
+            width="140" height="76"
+            rx="14" ry="14"
+            fill="white"
+            fill-opacity="0.08"
+            stroke="#4299e1"
+            stroke-opacity="0.35"
+            stroke-width="1"
+            />
+
+      
+      <rect class="node-hl"
+            x="61.0" y="469.0"
+            width="138" height="26.599999999999998"
+            rx="13" ry="13"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      
+
+      
+      <text class="node-icon"
+            x="82.0" y="506.0"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">🔌</text>
+      
+
+      <text class="node-label"
+            x="96.0" y="496.88"
+            text-anchor="start"
+            dominant-baseline="middle">API Gateway</text>
+
+      
+      <text class="node-subtitle"
+            x="96.0" y="515.12"
+            text-anchor="start"
+            dominant-baseline="middle">rate-limited · TLS</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="183.0"
+         data-chevron-cy="531.0">
+        <path d="M 179.0 529.0 L 183.0 533.0 L 187.0 529.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_f19592b0" opacity="0"
+       class="node-wrap layout-glass expandable"
+       data-cx="390.0"
+       data-cy="778.0"
+       data-nx="320.0"
+       data-ny="740.0"
+       data-base-height="76"
+       data-description="Issues and validates JWT tokens. Supports OAuth2 flows and integrates with external IdPs via OIDC."
+       data-hover-scale="1.06"
+       data-hover-glow="true"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="320.0" y="740.0"
+            width="140" height="76"
+            rx="14" ry="14"
+            fill="white"
+            fill-opacity="0.08"
+            stroke="#48bb78"
+            stroke-opacity="0.35"
+            stroke-width="1"
+            />
+
+      
+      <rect class="node-hl"
+            x="321.0" y="741.0"
+            width="138" height="26.599999999999998"
+            rx="13" ry="13"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      
+
+      
+      <text class="node-icon"
+            x="342.0" y="778.0"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">🔐</text>
+      
+
+      <text class="node-label"
+            x="356.0" y="768.88"
+            text-anchor="start"
+            dominant-baseline="middle">Auth Service</text>
+
+      
+      <text class="node-subtitle"
+            x="356.0" y="787.12"
+            text-anchor="start"
+            dominant-baseline="middle">JWT · OAuth2</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="443.0"
+         data-chevron-cy="803.0">
+        <path d="M 439.0 801.0 L 443.0 805.0 L 447.0 801.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_7b42e673" opacity="0"
+       class="node-wrap layout-glass expandable"
+       data-cx="390.0"
+       data-cy="642.0"
+       data-nx="320.0"
+       data-ny="604.0"
+       data-base-height="76"
+       data-description="Primary + read replica setup. Automatic failover via Patroni. Backups every 6 hours to S3."
+       data-hover-scale="1.06"
+       data-hover-glow="true"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="320.0" y="604.0"
+            width="140" height="76"
+            rx="14" ry="14"
+            fill="white"
+            fill-opacity="0.08"
+            stroke="#ed8936"
+            stroke-opacity="0.35"
+            stroke-width="1"
+            />
+
+      
+      <rect class="node-hl"
+            x="321.0" y="605.0"
+            width="138" height="26.599999999999998"
+            rx="13" ry="13"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      
+
+      
+      <text class="node-icon"
+            x="342.0" y="642.0"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">🗄️</text>
+      
+
+      <text class="node-label"
+            x="356.0" y="632.88"
+            text-anchor="start"
+            dominant-baseline="middle">PostgreSQL</text>
+
+      
+      <text class="node-subtitle"
+            x="356.0" y="651.12"
+            text-anchor="start"
+            dominant-baseline="middle">primary · replica</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="443.0"
+         data-chevron-cy="667.0">
+        <path d="M 439.0 665.0 L 443.0 669.0 L 447.0 665.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_e27ffd84" opacity="0"
+       class="node-wrap layout-minimal expandable"
+       data-cx="130.0"
+       data-cy="360.0"
+       data-nx="60.0"
+       data-ny="332.0"
+       data-base-height="56"
+       data-description="Web or mobile client. Communicates via REST over HTTPS."
+       data-hover-scale="1.03"
+       data-hover-glow="false"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="60.0" y="332.0"
+            width="140" height="56"
+            rx="6" ry="6"
+            fill="#9f7aea"
+            fill-opacity="1.0"
+            stroke="#9f7aea"
+            stroke-opacity="0"
+            stroke-width="0"
+            />
+
+      
+
+      
+
+      <text class="node-label"
+            x="130.0" y="360.0"
+            text-anchor="middle"
+            dominant-baseline="middle">Client</text>
+
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="183.0"
+         data-chevron-cy="375.0">
+        <path d="M 179.0 373.0 L 183.0 377.0 L 187.0 373.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_669a2f4f" opacity="0"
+       class="node-wrap layout-minimal expandable"
+       data-cx="390.0"
+       data-cy="496.0"
+       data-nx="320.0"
+       data-ny="468.0"
+       data-base-height="56"
+       data-description="Routes requests and applies middleware like auth, logging, and tracing."
+       data-hover-scale="1.03"
+       data-hover-glow="false"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="320.0" y="468.0"
+            width="140" height="56"
+            rx="6" ry="6"
+            fill="#f56565"
+            fill-opacity="1.0"
+            stroke="#f56565"
+            stroke-opacity="0"
+            stroke-width="0"
+            />
+
+      
+
+      
+
+      <text class="node-label"
+            x="390.0" y="496.0"
+            text-anchor="middle"
+            dominant-baseline="middle">Gateway</text>
+
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="443.0"
+         data-chevron-cy="511.0">
+        <path d="M 439.0 509.0 L 443.0 513.0 L 447.0 509.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_104d302e" opacity="0"
+       class="node-wrap layout-minimal expandable"
+       data-cx="650.0"
+       data-cy="88.0"
+       data-nx="580.0"
+       data-ny="60.0"
+       data-base-height="56"
+       data-description="Redis in-memory store. TTL 5 min. Reduces DB load by up to 80%."
+       data-hover-scale="1.03"
+       data-hover-glow="false"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="580.0" y="60.0"
+            width="140" height="56"
+            rx="6" ry="6"
+            fill="#38b2ac"
+            fill-opacity="1.0"
+            stroke="#38b2ac"
+            stroke-opacity="0"
+            stroke-width="0"
+            />
+
+      
+
+      
+
+      <text class="node-label"
+            x="650.0" y="88.0"
+            text-anchor="middle"
+            dominant-baseline="middle">Cache</text>
+
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="703.0"
+         data-chevron-cy="103.0">
+        <path d="M 699.0 101.0 L 703.0 105.0 L 707.0 101.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_5879a56e" opacity="0"
+       class="node-wrap layout-material expandable"
+       data-cx="130.0"
+       data-cy="234.0"
+       data-nx="60.0"
+       data-ny="196.0"
+       data-base-height="76"
+       data-description="Owns the user domain. Exposes REST API and async events via Kafka."
+       data-hover-scale="1.03"
+       data-hover-glow="false"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="60.0" y="196.0"
+            width="140" height="76"
+            rx="8" ry="8"
+            fill="#ed64a6"
+            fill-opacity="0.92"
+            stroke="#ed64a6"
+            stroke-opacity="0"
+            stroke-width="0"
+            filter="url(#shadow-md)"/>
+
+      
+
+      
+
+      <text class="node-label"
+            x="130.0" y="224.88"
+            text-anchor="middle"
+            dominant-baseline="middle">Service A</text>
+
+      
+      <text class="node-subtitle"
+            x="130.0" y="243.12"
+            text-anchor="middle"
+            dominant-baseline="middle">v2.1.0</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="183.0"
+         data-chevron-cy="259.0">
+        <path d="M 179.0 257.0 L 183.0 261.0 L 187.0 257.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_e01f2433" opacity="0"
+       class="node-wrap layout-material expandable"
+       data-cx="650.0"
+       data-cy="234.0"
+       data-nx="580.0"
+       data-ny="196.0"
+       data-base-height="76"
+       data-description="Processes payment workflows. PCI-DSS compliant. Circuit breaker enabled."
+       data-hover-scale="1.03"
+       data-hover-glow="false"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="580.0" y="196.0"
+            width="140" height="76"
+            rx="8" ry="8"
+            fill="#ecc94b"
+            fill-opacity="0.92"
+            stroke="#ecc94b"
+            stroke-opacity="0"
+            stroke-width="0"
+            filter="url(#shadow-md)"/>
+
+      
+
+      
+
+      <text class="node-label"
+            x="650.0" y="224.88"
+            text-anchor="middle"
+            dominant-baseline="middle">Service B</text>
+
+      
+      <text class="node-subtitle"
+            x="650.0" y="243.12"
+            text-anchor="middle"
+            dominant-baseline="middle">v1.9.4</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="703.0"
+         data-chevron-cy="259.0">
+        <path d="M 699.0 257.0 L 703.0 261.0 L 707.0 257.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_34188c10" opacity="0"
+       class="node-wrap layout-material expandable"
+       data-cx="390.0"
+       data-cy="234.0"
+       data-nx="320.0"
+       data-ny="196.0"
+       data-base-height="76"
+       data-description="Durable AMQP queue. Dead-letter exchange for failed messages. 3-node cluster."
+       data-hover-scale="1.03"
+       data-hover-glow="false"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="320.0" y="196.0"
+            width="140" height="76"
+            rx="8" ry="8"
+            fill="#4299e1"
+            fill-opacity="0.92"
+            stroke="#4299e1"
+            stroke-opacity="0"
+            stroke-width="0"
+            filter="url(#shadow-md)"/>
+
+      
+
+      
+
+      <text class="node-label"
+            x="390.0" y="224.88"
+            text-anchor="middle"
+            dominant-baseline="middle">Message Queue</text>
+
+      
+      <text class="node-subtitle"
+            x="390.0" y="243.12"
+            text-anchor="middle"
+            dominant-baseline="middle">RabbitMQ</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="443.0"
+         data-chevron-cy="259.0">
+        <path d="M 439.0 257.0 L 443.0 261.0 L 447.0 257.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_5bbccaae" opacity="0"
+       class="node-wrap layout-gradient expandable"
+       data-cx="390.0"
+       data-cy="370.0"
+       data-nx="320.0"
+       data-ny="332.0"
+       data-base-height="76"
+       data-description="PyTorch model served via TorchServe. P99 latency &lt; 30 ms. A/B tested weekly."
+       data-hover-scale="1.04"
+       data-hover-glow="true"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="320.0" y="332.0"
+            width="140" height="76"
+            rx="12" ry="12"
+            fill="url(#grad_n_5bbccaae)"
+            fill-opacity="1.0"
+            stroke="#48bb78"
+            stroke-opacity="0.3"
+            stroke-width="1"
+            />
+
+      
+      <rect class="node-hl"
+            x="321.0" y="333.0"
+            width="138" height="26.599999999999998"
+            rx="11" ry="11"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      
+
+      
+      <text class="node-icon"
+            x="342.0" y="370.0"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">🧠</text>
+      
+
+      <text class="node-label"
+            x="356.0" y="360.88"
+            text-anchor="start"
+            dominant-baseline="middle">ML Model</text>
+
+      
+      <text class="node-subtitle"
+            x="356.0" y="379.12"
+            text-anchor="start"
+            dominant-baseline="middle">inference · GPU</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="443.0"
+         data-chevron-cy="395.0">
+        <path d="M 439.0 393.0 L 443.0 397.0 L 447.0 393.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_533bc17d" opacity="0"
+       class="node-wrap layout-gradient expandable"
+       data-cx="130.0"
+       data-cy="98.0"
+       data-nx="60.0"
+       data-ny="60.0"
+       data-base-height="76"
+       data-description="Spark streaming pipeline. Processes 50K events/s. Auto-scales on EMR."
+       data-hover-scale="1.04"
+       data-hover-glow="true"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="60.0" y="60.0"
+            width="140" height="76"
+            rx="12" ry="12"
+            fill="url(#grad_n_533bc17d)"
+            fill-opacity="1.0"
+            stroke="#ed8936"
+            stroke-opacity="0.3"
+            stroke-width="1"
+            />
+
+      
+      <rect class="node-hl"
+            x="61.0" y="61.0"
+            width="138" height="26.599999999999998"
+            rx="11" ry="11"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      
+
+      
+      <text class="node-icon"
+            x="82.0" y="98.0"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">⚡</text>
+      
+
+      <text class="node-label"
+            x="96.0" y="88.88"
+            text-anchor="start"
+            dominant-baseline="middle">Pipeline</text>
+
+      
+      <text class="node-subtitle"
+            x="96.0" y="107.12"
+            text-anchor="start"
+            dominant-baseline="middle">Apache Spark</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="183.0"
+         data-chevron-cy="123.0">
+        <path d="M 179.0 121.0 L 183.0 125.0 L 187.0 121.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+    
+    
+    
+    
+    
+
+    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+      
+      
+    
+    
+      
+      
+    
+
+    
+    
+    
+
+    <g id="n_1f4cb390" opacity="0"
+       class="node-wrap layout-gradient expandable"
+       data-cx="390.0"
+       data-cy="98.0"
+       data-nx="320.0"
+       data-ny="60.0"
+       data-base-height="76"
+       data-description="Online feature store with sub-5 ms reads. Feast for offline training data sync."
+       data-hover-scale="1.04"
+       data-hover-glow="true"
+       data-expanded="false">
+
+      <rect class="node-bg"
+            x="320.0" y="60.0"
+            width="140" height="76"
+            rx="12" ry="12"
+            fill="url(#grad_n_1f4cb390)"
+            fill-opacity="1.0"
+            stroke="#9f7aea"
+            stroke-opacity="0.3"
+            stroke-width="1"
+            />
+
+      
+      <rect class="node-hl"
+            x="321.0" y="61.0"
+            width="138" height="26.599999999999998"
+            rx="11" ry="11"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      
+
+      
+      <text class="node-icon"
+            x="342.0" y="98.0"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">📦</text>
+      
+
+      <text class="node-label"
+            x="356.0" y="88.88"
+            text-anchor="start"
+            dominant-baseline="middle">Feature Store</text>
+
+      
+      <text class="node-subtitle"
+            x="356.0" y="107.12"
+            text-anchor="start"
+            dominant-baseline="middle">Redis · Feast</text>
+      
+
+      
+      
+      <g class="node-chevron"
+         data-chevron-cx="443.0"
+         data-chevron-cy="123.0">
+        <path d="M 439.0 121.0 L 443.0 125.0 L 447.0 121.0"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      
+    </g>
+    
+
+    <!-- dynamic message layer -->
+    <g id="msgLayer"></g>
+  </svg>
+
+  
+  <div class="controls">
+    <button class="btn" id="btnPrev" onclick="goPrev()" disabled>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M8 2L4 6L8 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Prev
+    </button>
+    <div class="step-info">
+      <div class="step-name" id="stepName">Glassmorphism  (click a node to expand)</div>
+      <div class="step-counter" id="stepCtr">0 / 5</div>
+      <div class="dots" id="dots">
+        <div class="dot" id="dot0"></div><div class="dot" id="dot1"></div><div class="dot" id="dot2"></div><div class="dot" id="dot3"></div><div class="dot" id="dot4"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btnNext" onclick="goNext()">
+      Next
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  
+</div>
+
+
+<div class="hint">← → arrow keys to navigate</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+        integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+// ─── data ────────────────────────────────────────────────────────────────────
+const D = {"title": "Diagflow \u2014 Layout Showcase", "nodes": [{"id": "n_f01fc7ff", "label": "API Gateway", "subtitle": "rate-limited \u00b7 TLS", "icon": "\ud83d\udd0c", "layout": "glass", "x": 60.0, "y": 468.0, "color": "#4299e1", "shape": "rect", "height": 76, "description": "Handles all inbound HTTP/gRPC traffic. Enforces rate limits, TLS termination, and request tracing via OpenTelemetry."}, {"id": "n_f19592b0", "label": "Auth Service", "subtitle": "JWT \u00b7 OAuth2", "icon": "\ud83d\udd10", "layout": "glass", "x": 320.0, "y": 740.0, "color": "#48bb78", "shape": "rect", "height": 76, "description": "Issues and validates JWT tokens. Supports OAuth2 flows and integrates with external IdPs via OIDC."}, {"id": "n_7b42e673", "label": "PostgreSQL", "subtitle": "primary \u00b7 replica", "icon": "\ud83d\uddc4\ufe0f", "layout": "glass", "x": 320.0, "y": 604.0, "color": "#ed8936", "shape": "rect", "height": 76, "description": "Primary + read replica setup. Automatic failover via Patroni. Backups every 6 hours to S3."}, {"id": "n_e27ffd84", "label": "Client", "subtitle": null, "icon": null, "layout": "minimal", "x": 60.0, "y": 332.0, "color": "#9f7aea", "shape": "rect", "height": 56, "description": "Web or mobile client. Communicates via REST over HTTPS."}, {"id": "n_669a2f4f", "label": "Gateway", "subtitle": null, "icon": null, "layout": "minimal", "x": 320.0, "y": 468.0, "color": "#f56565", "shape": "rect", "height": 56, "description": "Routes requests and applies middleware like auth, logging, and tracing."}, {"id": "n_104d302e", "label": "Cache", "subtitle": null, "icon": null, "layout": "minimal", "x": 580.0, "y": 60.0, "color": "#38b2ac", "shape": "rect", "height": 56, "description": "Redis in-memory store. TTL 5 min. Reduces DB load by up to 80%."}, {"id": "n_5879a56e", "label": "Service A", "subtitle": "v2.1.0", "icon": null, "layout": "material", "x": 60.0, "y": 196.0, "color": "#ed64a6", "shape": "rect", "height": 76, "description": "Owns the user domain. Exposes REST API and async events via Kafka."}, {"id": "n_e01f2433", "label": "Service B", "subtitle": "v1.9.4", "icon": null, "layout": "material", "x": 580.0, "y": 196.0, "color": "#ecc94b", "shape": "rect", "height": 76, "description": "Processes payment workflows. PCI-DSS compliant. Circuit breaker enabled."}, {"id": "n_34188c10", "label": "Message Queue", "subtitle": "RabbitMQ", "icon": null, "layout": "material", "x": 320.0, "y": 196.0, "color": "#4299e1", "shape": "rect", "height": 76, "description": "Durable AMQP queue. Dead-letter exchange for failed messages. 3-node cluster."}, {"id": "n_5bbccaae", "label": "ML Model", "subtitle": "inference \u00b7 GPU", "icon": "\ud83e\udde0", "layout": "gradient", "x": 320.0, "y": 332.0, "color": "#48bb78", "shape": "rect", "height": 76, "description": "PyTorch model served via TorchServe. P99 latency < 30 ms. A/B tested weekly."}, {"id": "n_533bc17d", "label": "Pipeline", "subtitle": "Apache Spark", "icon": "\u26a1", "layout": "gradient", "x": 60.0, "y": 60.0, "color": "#ed8936", "shape": "rect", "height": 76, "description": "Spark streaming pipeline. Processes 50K events/s. Auto-scales on EMR."}, {"id": "n_1f4cb390", "label": "Feature Store", "subtitle": "Redis \u00b7 Feast", "icon": "\ud83d\udce6", "layout": "gradient", "x": 320.0, "y": 60.0, "color": "#9f7aea", "shape": "rect", "height": 76, "description": "Online feature store with sub-5 ms reads. Feast for offline training data sync."}], "edges": [{"id": "e_d9dec115", "source": "n_f01fc7ff", "target": "n_f19592b0", "label": null, "style": "solid"}, {"id": "e_74798c4a", "source": "n_f01fc7ff", "target": "n_7b42e673", "label": null, "style": "solid"}, {"id": "e_9dedda07", "source": "n_e27ffd84", "target": "n_669a2f4f", "label": null, "style": "solid"}, {"id": "e_cccfa207", "source": "n_669a2f4f", "target": "n_104d302e", "label": null, "style": "solid"}, {"id": "e_aff6a640", "source": "n_5879a56e", "target": "n_34188c10", "label": null, "style": "solid"}, {"id": "e_7b637741", "source": "n_34188c10", "target": "n_e01f2433", "label": null, "style": "solid"}, {"id": "e_94476752", "source": "n_533bc17d", "target": "n_5bbccaae", "label": null, "style": "solid"}, {"id": "e_1ec9f57c", "source": "n_533bc17d", "target": "n_1f4cb390", "label": null, "style": "solid"}], "steps": [{"title": "Glassmorphism  (click a node to expand)", "animations": [{"type": "fade_in", "target": "n_f01fc7ff", "at": 0.0}, {"type": "fade_in", "target": "n_f19592b0", "at": 0.0}, {"type": "fade_in", "target": "n_7b42e673", "at": 0.0}, {"type": "fade_in", "target": "e_d9dec115", "at": 0.0}, {"type": "fade_in", "target": "e_74798c4a", "at": 0.0}, {"type": "scale_in", "target": "n_f01fc7ff", "at": 0, "from_scale": 0.5}, {"type": "scale_in", "target": "n_f19592b0", "at": 0.15, "from_scale": 0.5}, {"type": "scale_in", "target": "n_7b42e673", "at": 0.3, "from_scale": 0.5}]}, {"title": "Minimal Flat", "animations": [{"type": "fade_in", "target": "n_e27ffd84", "at": 0.0}, {"type": "fade_in", "target": "n_669a2f4f", "at": 0.0}, {"type": "fade_in", "target": "n_104d302e", "at": 0.0}, {"type": "fade_in", "target": "e_9dedda07", "at": 0.0}, {"type": "fade_in", "target": "e_cccfa207", "at": 0.0}]}, {"title": "Material Design", "animations": [{"type": "fade_in", "target": "n_5879a56e", "at": 0.0}, {"type": "fade_in", "target": "n_e01f2433", "at": 0.0}, {"type": "fade_in", "target": "n_34188c10", "at": 0.0}, {"type": "fade_in", "target": "e_aff6a640", "at": 0.0}, {"type": "fade_in", "target": "e_7b637741", "at": 0.0}]}, {"title": "Modern Gradient", "animations": [{"type": "fade_in", "target": "n_5bbccaae", "at": 0.0}, {"type": "fade_in", "target": "n_533bc17d", "at": 0.0}, {"type": "fade_in", "target": "n_1f4cb390", "at": 0.0}, {"type": "fade_in", "target": "e_94476752", "at": 0.0}, {"type": "fade_in", "target": "e_1ec9f57c", "at": 0.0}, {"type": "scale_in", "target": "n_5bbccaae", "at": 0.1, "from_scale": 0.5}, {"type": "scale_in", "target": "n_533bc17d", "at": 0.25, "from_scale": 0.5}, {"type": "scale_in", "target": "n_1f4cb390", "at": 0.4, "from_scale": 0.5}]}, {"title": "Live inference", "animations": [{"type": "pulse", "target": "n_533bc17d", "at": 0.0, "scale": 1.15, "duration": 0.6}, {"type": "send_message", "from": "n_533bc17d", "to": "n_5bbccaae", "label": "predict(X)", "at": 0.3}, {"type": "highlight", "target": "n_5bbccaae", "color": "#a78bfa", "at": 1.2, "duration": 1.0}]}], "node_w": 140, "node_h": 56};
+const NW = D.node_w, NH = D.node_h;
+
+const npos = {};
+D.nodes.forEach(n => { npos[n.id] = n; });
+
+const origColor = {};
+D.nodes.forEach(n => { origColor[n.id] = n.color; });
+
+// ─── expand state ────────────────────────────────────────────────────────────
+const _svg      = document.getElementById('svg');
+const origSvgH  = parseFloat(_svg.getAttribute('height'));
+const origVB    = _svg.getAttribute('viewBox');
+
+const origEdgePath = {};
+D.edges.forEach(e => {
+  const p = document.querySelector('#' + e.id + ' path.edge-path');
+  if (p) origEdgePath[e.id] = p.getAttribute('d');
+});
+
+const yOff = {};
+D.nodes.forEach(n => { yOff[n.id] = 0; });
+
+// ─── state ───────────────────────────────────────────────────────────────────
+let cur = -1;
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+function nh(n) { return n.height || NH; }
+
+function cx(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? src.x + NW : src.x;
+  return src.x + NW / 2;
+}
+function cy(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return src.y + nh(src) / 2;
+  return dy >= 0 ? src.y + nh(src) : src.y;
+}
+function tx(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? tgt.x : tgt.x + NW;
+  return tgt.x + NW / 2;
+}
+function ty(src, tgt) {
+  const dx = tgt.x - src.x, dy = tgt.y - src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return tgt.y + nh(tgt) / 2;
+  return dy >= 0 ? tgt.y : tgt.y + nh(tgt);
+}
+
+// ─── animation engine ────────────────────────────────────────────────────────
+function playStep(idx) {
+  const step = D.steps[idx];
+  if (!step) return;
+  const tl = gsap.timeline();
+
+  step.animations.forEach(anim => {
+    const t = anim.at || 0;
+
+    if (anim.type === 'fade_in') {
+      tl.to('#' + anim.target, { opacity: 1, duration: 0.4, ease: 'power2.out' }, t);
+
+    } else if (anim.type === 'scale_in') {
+      const el = document.getElementById(anim.target);
+      if (!el) return;
+      const ncx = el.dataset.cx || 0, ncy = el.dataset.cy || 0;
+      gsap.set(el, { opacity: 0, scale: anim.from_scale || 0.5, svgOrigin: ncx + ' ' + ncy });
+      tl.to(el, {
+        opacity: 1, scale: 1,
+        duration: 0.45, ease: 'back.out(1.7)',
+        svgOrigin: ncx + ' ' + ncy,
+      }, t);
+
+    } else if (anim.type === 'pulse') {
+      const el = document.getElementById(anim.target);
+      if (!el) return;
+      const ncx = el.dataset.cx || 0, ncy = el.dataset.cy || 0;
+      const dur = anim.duration || 0.6;
+      tl.to(el, {
+        scale: anim.scale || 1.15,
+        duration: dur * 0.4, ease: 'power2.out',
+        svgOrigin: ncx + ' ' + ncy,
+      }, t)
+        .to(el, {
+          scale: 1,
+          duration: dur * 0.6, ease: 'elastic.out(1,0.4)',
+          svgOrigin: ncx + ' ' + ncy,
+        }, t + dur * 0.4);
+
+    } else if (anim.type === 'fade_out') {
+      tl.to('#' + anim.target, { opacity: 0, duration: 0.3, ease: 'power2.in' }, t);
+
+    } else if (anim.type === 'highlight') {
+      const sel = '#' + anim.target + ' rect.node-bg';
+      tl.to(sel, {
+        attr: { stroke: anim.color, 'stroke-opacity': 1, 'stroke-width': 2.5 },
+        filter: 'url(#glow)', duration: 0.22,
+      }, t)
+        .to(sel, {
+          attr: {
+            stroke: origColor[anim.target],
+            'stroke-opacity': 0.7,
+            'stroke-width': 1.5,
+          },
+          filter: 'none', duration: 0.4,
+        }, t + (anim.duration || 1));
+
+    } else if (anim.type === 'send_message') {
+      const s = npos[anim.from], tg = npos[anim.to];
+      if (!s || !tg) return;
+      const x1 = cx(s, tg), y1 = cy(s, tg);
+      const x2 = tx(s, tg), y2 = ty(s, tg);
+
+      const id = 'msg_' + Math.random().toString(36).slice(2, 8);
+      const ns = 'http://www.w3.org/2000/svg';
+      const layer = document.getElementById('msgLayer');
+
+      const g = document.createElementNS(ns, 'g');
+      g.id = id;
+
+      const lbl = anim.label || '';
+      const bw = Math.max(lbl.length * 7 + 22, 30);
+      const bh = 22;
+
+      const pill = document.createElementNS(ns, 'rect');
+      pill.setAttribute('width', bw);
+      pill.setAttribute('height', bh);
+      pill.setAttribute('x', -bw / 2);
+      pill.setAttribute('y', -bh / 2);
+      pill.setAttribute('rx', bh / 2);
+      pill.setAttribute('fill', '#1d4ed8');
+      pill.setAttribute('stroke', '#3b82f6');
+      pill.setAttribute('stroke-width', '1');
+      pill.setAttribute('filter', 'url(#glow-sm)');
+
+      const txt = document.createElementNS(ns, 'text');
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('dominant-baseline', 'middle');
+      txt.setAttribute('fill', '#fff');
+      txt.setAttribute('font-size', '11');
+      txt.setAttribute('font-weight', '600');
+      txt.setAttribute('font-family', 'inherit');
+      txt.textContent = lbl;
+
+      g.appendChild(pill);
+      g.appendChild(txt);
+      layer.appendChild(g);
+
+      gsap.set(g, { x: x1, y: y1, opacity: 0, scale: 0.6 });
+      tl.to(g, { opacity: 1, scale: 1, duration: 0.2, ease: 'back.out(1.5)' }, t)
+        .to(g, { x: x2, y: y2, duration: 0.65, ease: 'power2.inOut' }, t + 0.15)
+        .to(g, { opacity: 0, scale: 0.6, duration: 0.2, ease: 'back.in(1.5)' }, t + 0.75)
+        .call(() => { if (layer.contains(g)) layer.removeChild(g); }, null, t + 1.0);
+    }
+  });
+}
+
+function applyInstant(idx) {
+  const step = D.steps[idx];
+  if (!step) return;
+  step.animations.forEach(a => {
+    if (a.type === 'fade_in' || a.type === 'scale_in') {
+      const el = document.getElementById(a.target);
+      if (el) gsap.set(el, { opacity: 1, scale: 1 });
+    }
+    if (a.type === 'fade_out') {
+      const el = document.getElementById(a.target);
+      if (el) gsap.set(el, { opacity: 0 });
+    }
+  });
+}
+
+function resetAll() {
+  gsap.killTweensOf('*');
+  document.getElementById('msgLayer').innerHTML = '';
+
+  // reset SVG dimensions
+  const svg = document.getElementById('svg');
+  svg.setAttribute('height', origSvgH);
+  svg.setAttribute('viewBox', origVB);
+
+  // reset every node: position, expand state, highlight
+  D.nodes.forEach(n => {
+    yOff[n.id] = 0;
+    const el = document.getElementById(n.id);
+    if (!el) return;
+    gsap.set(el, { opacity: 0, scale: 1, y: 0 });
+    el.dataset.expanded   = 'false';
+    el.dataset.shiftedIds = '[]';
+
+    const bg = el.querySelector('rect.node-bg');
+    if (bg) {
+      gsap.set(bg, { attr: { height: parseFloat(el.dataset.baseHeight || NH) } });
+      bg.setAttribute('stroke', origColor[n.id]);
+      bg.setAttribute('stroke-opacity', '0.7');
+      bg.setAttribute('stroke-width', '1.5');
+      bg.removeAttribute('filter');
+    }
+    const dg = el.querySelector('.node-desc-group');
+    if (dg) gsap.set(dg, { opacity: 0 });
+    const chev = el.querySelector('.node-chevron');
+    if (chev) {
+      const ccx = parseFloat(chev.dataset.chevronCx || 0);
+      const ccy = parseFloat(chev.dataset.chevronCy || 0);
+      gsap.set(chev, { rotation: 0, svgOrigin: `${ccx} ${ccy}` });
+    }
+  });
+
+  // restore original edge paths
+  D.edges.forEach(e => {
+    const pathEl = document.querySelector('#' + e.id + ' path.edge-path');
+    if (pathEl && origEdgePath[e.id]) pathEl.setAttribute('d', origEdgePath[e.id]);
+    const lblEl = document.querySelector('#' + e.id + ' text.edge-label');
+    // label positions are restored implicitly (they were never changed in place)
+    gsap.set('#' + e.id, { opacity: 0 });
+  });
+}
+
+// ─── reflow helpers ──────────────────────────────────────────────────────────
+const CP_JS = 50;
+
+function apos(id) {
+  const n = npos[id];
+  return { ...n, y: n.y + (yOff[id] || 0) };
+}
+
+function edgeBezierFull(srcId, tgtId) {
+  const s = apos(srcId), t = apos(tgtId);
+  const sh = s.height || NH, th = t.height || NH;
+  const dx = t.x - s.x, dy = t.y - s.y;
+  let x1, y1, x2, y2, cx1, cy1, cx2, cy2;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    if (dx >= 0) {
+      x1 = s.x + NW; y1 = s.y + sh / 2; x2 = t.x;      y2 = t.y + th / 2;
+      cx1 = x1 + CP_JS; cy1 = y1; cx2 = x2 - CP_JS; cy2 = y2;
+    } else {
+      x1 = s.x;       y1 = s.y + sh / 2; x2 = t.x + NW; y2 = t.y + th / 2;
+      cx1 = x1 - CP_JS; cy1 = y1; cx2 = x2 + CP_JS; cy2 = y2;
+    }
+  } else {
+    if (dy >= 0) {
+      x1 = s.x + NW / 2; y1 = s.y + sh; x2 = t.x + NW / 2; y2 = t.y;
+      cx1 = x1; cy1 = y1 + CP_JS; cx2 = x2; cy2 = y2 - CP_JS;
+    } else {
+      x1 = s.x + NW / 2; y1 = s.y;      x2 = t.x + NW / 2; y2 = t.y + th;
+      cx1 = x1; cy1 = y1 - CP_JS; cx2 = x2; cy2 = y2 + CP_JS;
+    }
+  }
+
+  return {
+    d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)} ${cx2.toFixed(1)} ${cy2.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`,
+    midX: (x1 + x2) / 2,
+    midY: (y1 + y2) / 2 - 14,
+  };
+}
+
+function snapEdges(shiftedSet) {
+  D.edges.forEach(e => {
+    if (!shiftedSet.has(e.source) && !shiftedSet.has(e.target)) return;
+    const pathEl = document.querySelector('#' + e.id + ' path.edge-path');
+    if (!pathEl) return;
+    const { d, midX, midY } = edgeBezierFull(e.source, e.target);
+    pathEl.setAttribute('d', d);
+    const lblEl = document.querySelector('#' + e.id + ' text.edge-label');
+    if (lblEl) { lblEl.setAttribute('x', midX); lblEl.setAttribute('y', midY); }
+  });
+}
+
+function reflowEdges(shiftedSet, dur) {
+  const affected = D.edges.filter(e => shiftedSet.has(e.source) || shiftedSet.has(e.target));
+  if (!affected.length) return;
+
+  // snapshot visibility BEFORE fade-out so we know which edges to restore
+  const wasVisible = new Map();
+  affected.forEach(e => {
+    const edgeEl = document.getElementById(e.id);
+    wasVisible.set(e.id, edgeEl ? parseFloat(gsap.getProperty(edgeEl, 'opacity')) > 0.4 : false);
+  });
+
+  affected.forEach(e => {
+    if (wasVisible.get(e.id))
+      gsap.to('#' + e.id, { opacity: 0, duration: 0.08, overwrite: 'auto' });
+  });
+
+  gsap.delayedCall(dur * 0.55, () => {
+    snapEdges(shiftedSet);
+    affected.forEach(e => {
+      if (wasVisible.get(e.id))
+        gsap.to('#' + e.id, { opacity: 1, duration: 0.18 });
+    });
+  });
+}
+
+function resizeSvg(delta) {
+  const svg = document.getElementById('svg');
+  const newH = parseFloat(svg.getAttribute('height')) + delta;
+  const [vx, vy, vw] = svg.getAttribute('viewBox').split(' ').map(Number);
+  svg.setAttribute('height', newH);
+  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${newH}`);
+}
+
+// ─── expand / collapse ────────────────────────────────────────────────────────
+function wrapText(text, maxChars) {
+  const words = text.split(' ');
+  const lines = [];
+  let curr = '';
+  for (const w of words) {
+    const test = curr ? curr + ' ' + w : w;
+    if (test.length > maxChars && curr) { lines.push(curr); curr = w; }
+    else curr = test;
+  }
+  if (curr) lines.push(curr);
+  return lines;
+}
+
+function toggleExpand(el) {
+  const desc = el.dataset.description;
+  if (!desc) return;
+
+  const isExpanded = el.dataset.expanded === 'true';
+  const baseH = parseFloat(el.dataset.baseHeight);
+  const nx    = parseFloat(el.dataset.nx);
+  const ny    = parseFloat(el.dataset.ny);
+  const bg    = el.querySelector('rect.node-bg');
+  const chev  = el.querySelector('.node-chevron');
+  const ns    = 'http://www.w3.org/2000/svg';
+  const DUR   = 0.38;
+
+  // lift above siblings in SVG stacking order
+  el.parentNode.appendChild(el);
+
+  if (!isExpanded) {
+    // ── build description group (lazy, first expand only) ────────────────────
+    let dg = el.querySelector('.node-desc-group');
+    if (!dg) {
+      const maxCh = Math.floor((NW - 26) / 6.8);
+      const lines = wrapText(desc, maxCh);
+      el.dataset.expandH = baseH + lines.length * 15 + 22;
+
+      dg = document.createElementNS(ns, 'g');
+      dg.classList.add('node-desc-group');
+      gsap.set(dg, { opacity: 0 });
+
+      const sep = document.createElementNS(ns, 'line');
+      sep.setAttribute('x1', nx + 10);         sep.setAttribute('y1', ny + baseH + 5);
+      sep.setAttribute('x2', nx + NW - 10);    sep.setAttribute('y2', ny + baseH + 5);
+      sep.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+      sep.setAttribute('stroke-width', '1');
+      dg.appendChild(sep);
+
+      const txt = document.createElementNS(ns, 'text');
+      txt.setAttribute('fill', 'rgba(255,255,255,0.55)');
+      txt.setAttribute('font-size', '10.5');
+      txt.setAttribute('font-weight', '400');
+      txt.setAttribute('font-family', 'inherit');
+      txt.setAttribute('pointer-events', 'none');
+      lines.forEach((line, i) => {
+        const ts = document.createElementNS(ns, 'tspan');
+        ts.setAttribute('x', nx + 12);
+        ts.setAttribute('y', ny + baseH + 19 + i * 15);
+        ts.textContent = line;
+        txt.appendChild(ts);
+      });
+      dg.appendChild(txt);
+      el.appendChild(dg);
+    }
+
+    const expandH = parseFloat(el.dataset.expandH);
+    const delta   = expandH - baseH;
+    el.dataset.expanded = 'true';
+    el.dataset.delta    = delta;
+
+    // ── expand rect ──────────────────────────────────────────────────────────
+    gsap.to(bg, { attr: { height: expandH }, duration: DUR, ease: 'power3.out' });
+    gsap.to(dg, { opacity: 1, duration: 0.28, delay: 0.18, ease: 'power2.out' });
+    if (chev) {
+      const ccx = parseFloat(chev.dataset.chevronCx);
+      const ccy = parseFloat(chev.dataset.chevronCy);
+      gsap.to(chev, { rotation: 180, svgOrigin: `${ccx} ${ccy}`, duration: 0.3, ease: 'power2.inOut' });
+    }
+
+    // ── push nodes below down (CSS translateY — GPU compositor) ─────────────
+    const myBottom = ny + (yOff[el.id] || 0) + baseH;
+    const toShift  = D.nodes
+      .filter(n => n.id !== el.id && (n.y + (yOff[n.id] || 0)) > myBottom - 8)
+      .map(n => n.id);
+    el.dataset.shiftedIds = JSON.stringify(toShift);
+
+    toShift.forEach(id => {
+      yOff[id] += delta;
+      const nodeEl = document.getElementById(id);
+      if (nodeEl) gsap.to(nodeEl, { y: yOff[id], duration: DUR, ease: 'power3.out' });
+    });
+
+    resizeSvg(delta);
+    reflowEdges(new Set([el.id, ...toShift]), DUR);
+
+  } else {
+    // ── collapse ─────────────────────────────────────────────────────────────
+    el.dataset.expanded = 'false';
+    const delta   = parseFloat(el.dataset.delta || 0);
+    const toShift = JSON.parse(el.dataset.shiftedIds || '[]');
+    const dg      = el.querySelector('.node-desc-group');
+
+    gsap.to(bg, { attr: { height: baseH }, duration: DUR * 0.8, ease: 'power3.in' });
+    if (dg) gsap.to(dg, { opacity: 0, duration: 0.12 });
+    if (chev) {
+      const ccx = parseFloat(chev.dataset.chevronCx);
+      const ccy = parseFloat(chev.dataset.chevronCy);
+      gsap.to(chev, { rotation: 0, svgOrigin: `${ccx} ${ccy}`, duration: 0.28, ease: 'power2.inOut' });
+    }
+
+    toShift.forEach(id => {
+      yOff[id] -= delta;
+      const nodeEl = document.getElementById(id);
+      if (nodeEl) gsap.to(nodeEl, { y: yOff[id], duration: DUR, ease: 'power3.out' });
+    });
+
+    resizeSvg(-delta);
+    reflowEdges(new Set([el.id, ...toShift]), DUR * 0.8);
+  }
+}
+
+function setupExpand() {
+  document.querySelectorAll('.node-wrap.expandable').forEach(el => {
+    el.addEventListener('click', () => {
+      if (parseFloat(gsap.getProperty(el, 'opacity')) < 0.3) return;
+      toggleExpand(el);
+    });
+  });
+}
+
+// ─── hover effects ───────────────────────────────────────────────────────────
+function setupHover() {
+  document.querySelectorAll('.node-wrap').forEach(el => {
+    const hoverScale = parseFloat(el.dataset.hoverScale || '1.04');
+    const hoverGlow  = el.dataset.hoverGlow === 'true';
+    const ncx = el.dataset.cx || '0';
+    const ncy = el.dataset.cy || '0';
+    const origin = ncx + ' ' + ncy;
+
+    el.addEventListener('mouseenter', () => {
+      if (parseFloat(gsap.getProperty(el, 'opacity')) < 0.3) return;
+      gsap.to(el, { scale: hoverScale, duration: 0.18, ease: 'power2.out', svgOrigin: origin });
+      if (hoverGlow) {
+        const bg = el.querySelector('rect.node-bg');
+        if (bg) gsap.to(bg, { filter: 'url(#glow)', duration: 0.18 });
+      }
+    });
+    el.addEventListener('mouseleave', () => {
+      gsap.to(el, { scale: 1, duration: 0.22, ease: 'power2.inOut', svgOrigin: origin });
+      const bg = el.querySelector('rect.node-bg');
+      if (bg) gsap.to(bg, { filter: 'none', duration: 0.22 });
+    });
+  });
+}
+
+// ─── navigation ──────────────────────────────────────────────────────────────
+function updateUI() {
+  const total = D.steps.length;
+  document.getElementById('btnPrev').disabled = cur <= 0;
+  document.getElementById('btnNext').disabled = cur >= total - 1;
+  const step = D.steps[cur] || {};
+  const nameEl = document.getElementById('stepName');
+  if (nameEl) {
+    nameEl.style.opacity = '0';
+    setTimeout(() => { nameEl.textContent = step.title || ''; nameEl.style.opacity = '1'; }, 120);
+  }
+  const ctrEl = document.getElementById('stepCtr');
+  if (ctrEl) ctrEl.textContent = `${cur + 1} / ${total}`;
+
+  D.steps.forEach((_, i) => {
+    const d = document.getElementById('dot' + i);
+    if (!d) return;
+    if (i < cur)        d.className = 'dot done';
+    else if (i === cur) d.className = 'dot active';
+    else                d.className = 'dot';
+  });
+}
+
+function goNext() {
+  if (cur >= D.steps.length - 1) return;
+  cur++;
+  playStep(cur);
+  updateUI();
+}
+
+function goPrev() {
+  if (cur <= 0) return;
+  const target = cur - 1;
+  resetAll();
+  for (let i = 0; i < target; i++) applyInstant(i);
+  cur = target;
+  playStep(cur);
+  updateUI();
+}
+
+// ─── keyboard ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); goPrev(); }
+});
+
+// ─── boot ─────────────────────────────────────────────────────────────────────
+setupHover();
+setupExpand();
+goNext();
+</script>
+</body>
+</html>

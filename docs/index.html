@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagflow — Animated Diagrams in Python</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #0d0d16;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      background: rgba(9,9,15,0.85);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: white !important;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 2rem 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 900px; height: 900px;
+      background: radial-gradient(circle, rgba(124,58,237,0.13) 0%, transparent 65%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .hero-inner { position: relative; z-index: 1; }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: #a78bfa;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      margin-bottom: 1.75rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 6vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1.08;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.03em;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--muted);
+      max-width: 580px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 4rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: white;
+      padding: 0.875rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 30px rgba(124,58,237,0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 45px rgba(124,58,237,0.55);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      padding: 0.875rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover {
+      border-color: rgba(124,58,237,0.5);
+      background: rgba(124,58,237,0.06);
+    }
+
+    /* ── CODE PREVIEW ── */
+    .code-preview {
+      max-width: 660px;
+      margin: 0 auto;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 0 80px rgba(124,58,237,0.12), 0 30px 60px rgba(0,0,0,0.4);
+    }
+
+    .code-header {
+      padding: 0.75rem 1.1rem;
+      background: #0f0f1a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-red    { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green  { background: #28c840; }
+
+    .code-filename {
+      margin-left: 0.5rem;
+      font-size: 0.73rem;
+      color: var(--muted);
+      font-family: 'Fira Code', monospace;
+    }
+
+    pre {
+      padding: 1.5rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.75;
+    }
+
+    .kw  { color: #c084fc; }
+    .fn  { color: #38bdf8; }
+    .str { color: #86efac; }
+    .num { color: #fb923c; }
+    .cm  { color: #3d4059; }
+
+    /* ── SECTION BASE ── */
+    .section-wrap {
+      padding: 6rem 2rem;
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #a78bfa;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-sub {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 540px;
+      margin-bottom: 3.5rem;
+      line-height: 1.7;
+    }
+
+    /* ── FEATURES ── */
+    #features { border-top: 1px solid var(--border); }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.75rem;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .feature-card:hover {
+      border-color: rgba(124,58,237,0.45);
+      transform: translateY(-3px);
+    }
+
+    .feature-icon {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      color: var(--muted);
+      font-size: 0.875rem;
+      line-height: 1.65;
+    }
+
+    /* ── EXAMPLES ── */
+    #examples { border-top: 1px solid var(--border); }
+
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .example-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.25s, transform 0.25s;
+      display: flex;
+      flex-direction: column;
+    }
+    .example-card:hover {
+      border-color: rgba(6,182,212,0.4);
+      transform: translateY(-3px);
+    }
+
+    .example-preview {
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #0d0d1a, #111118);
+      position: relative;
+    }
+
+    .example-preview::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg,
+        rgba(124,58,237,0.07),
+        rgba(6,182,212,0.07));
+    }
+
+    .example-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+
+    .example-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent2);
+      background: rgba(6,182,212,0.1);
+      border-radius: 4px;
+      padding: 0.2rem 0.55rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .example-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .example-card p {
+      color: var(--muted);
+      font-size: 0.875rem;
+      line-height: 1.6;
+      flex: 1;
+      margin-bottom: 1.25rem;
+    }
+
+    .example-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #a78bfa;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: gap 0.2s;
+      align-self: flex-start;
+    }
+    .example-link:hover { gap: 0.7rem; }
+
+    /* ── INSTALL ── */
+    #install { border-top: 1px solid var(--border); }
+
+    .install-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .install-cmd {
+      font-family: 'Fira Code', monospace;
+      font-size: 1rem;
+      color: #86efac;
+    }
+
+    .copy-btn {
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: #a78bfa;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      font-weight: 500;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { background: rgba(124,58,237,0.28); }
+
+    .install-steps { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .install-step { display: flex; gap: 1rem; align-items: flex-start; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: rgba(124,58,237,0.18);
+      border: 1px solid rgba(124,58,237,0.4);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; color: #a78bfa;
+      margin-top: 2px;
+    }
+
+    .install-step p { color: var(--muted); font-size: 0.9rem; }
+
+    .install-step code {
+      background: rgba(124,58,237,0.1);
+      border-radius: 4px;
+      padding: 0.1rem 0.45rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #c084fc;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    footer a { color: #a78bfa; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">diagflow</span>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#examples">Examples</a>
+    <a href="#install">Install</a>
+  </div>
+  <a href="https://github.com/YOUR_USERNAME/diagflow" class="nav-cta" target="_blank">GitHub →</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">✦ Open Source · Python · v0.1.0</div>
+    <h1>
+      Animated Diagrams,<br>
+      <span class="gradient-text">Pure Python.</span>
+    </h1>
+    <p>
+      Describe your architecture, data flow, or algorithm declaratively.
+      Export a beautiful self-contained HTML presentation in one line.
+    </p>
+    <div class="hero-buttons">
+      <a href="#examples" class="btn-primary">View Examples</a>
+      <a href="#install" class="btn-secondary">Get Started →</a>
+    </div>
+
+    <div class="code-preview">
+      <div class="code-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="code-filename">api_flow.py</span>
+      </div>
+      <pre><span class="kw">from</span> diagflow <span class="kw">import</span> Diagram, Node, Edge
+
+d = Diagram()
+
+<span class="kw">with</span> <span class="fn">d.step</span>(<span class="str">"System Overview"</span>):
+    api  = <span class="fn">Node</span>(<span class="str">"API Gateway"</span>).fade_in()
+    auth = <span class="fn">Node</span>(<span class="str">"Auth Service"</span>).fade_in(at=<span class="num">0.3</span>)
+    db   = <span class="fn">Node</span>(<span class="str">"PostgreSQL"</span>).fade_in(at=<span class="num">0.6</span>)
+    <span class="fn">Edge</span>(api, auth).fade_in(at=<span class="num">0.9</span>)
+    <span class="fn">Edge</span>(api, db).fade_in(at=<span class="num">1.1</span>)
+
+<span class="kw">with</span> <span class="fn">d.step</span>(<span class="str">"Request Flow"</span>):
+    api.<span class="fn">send</span>(<span class="str">"GET /users"</span>, db)
+
+d.<span class="fn">export</span>(<span class="str">"presentation.html"</span>)</pre>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-wrap">
+    <div class="section-label">Why Diagflow</div>
+    <h2 class="section-title">Everything for visual storytelling</h2>
+    <p class="section-sub">From simple architecture diagrams to complex animated flows — all declarative, all in Python.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Declarative DSL</h3>
+        <p>Describe diagrams in pure Python. No XML, no YAML, no drag-and-drop. Just clean, readable code that version controls perfectly.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎬</span>
+        <h3>Step-based Slides</h3>
+        <p>Break your story into steps. Navigate with arrow keys. Each step reveals the next layer of your system, keeping the audience focused.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔄</span>
+        <h3>Graph Morphing</h3>
+        <p>Smoothly transition between two diagram states. Nodes persist, appear, or dissolve with intelligent semantic matching.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎨</span>
+        <h3>Beautiful by Default</h3>
+        <p>Glassmorphism, Material, Gradient, and Minimal themes built-in. No configuration needed to produce great-looking output.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📦</span>
+        <h3>Standalone HTML</h3>
+        <p>One file, zero dependencies. Share a single HTML that runs in any browser — no server, no build step, no internet required.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🧩</span>
+        <h3>Auto Layout</h3>
+        <p>Topological, spring, and grid layouts powered by NetworkX. Nodes position themselves so you can focus on the story.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXAMPLES -->
+<section id="examples">
+  <div class="section-wrap">
+    <div class="section-label">Live Demos</div>
+    <h2 class="section-title">See it in action</h2>
+    <p class="section-sub">Each example is a self-contained animated HTML file. Open the demo and navigate with arrow keys.</p>
+
+    <div class="examples-grid">
+
+      <div class="example-card">
+        <div class="example-preview">🔷</div>
+        <div class="example-body">
+          <span class="example-tag">Starter</span>
+          <h3>Basic Example</h3>
+          <p>Two nodes, one edge, one message. The minimal starting point — perfect for understanding the core API in under 20 lines.</p>
+          <a href="examples/basic_output.html" target="_blank" class="example-link">Open Demo →</a>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-preview">🌐</div>
+        <div class="example-body">
+          <span class="example-tag">5 Steps</span>
+          <h3>API Flow</h3>
+          <p>A full request lifecycle: Client → Gateway → Auth Service → Redis Cache → PostgreSQL, narrated step by step with highlights.</p>
+          <a href="examples/api_flow_output.html" target="_blank" class="example-link">Open Demo →</a>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-preview">🔐</div>
+        <div class="example-body">
+          <span class="example-tag">5 Steps</span>
+          <h3>Auth Flow</h3>
+          <p>JWT authentication from login to token delivery. Browser → API → JWT Service → Users DB, each hop animated in sequence.</p>
+          <a href="examples/auth_flow_output.html" target="_blank" class="example-link">Open Demo →</a>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-preview">🎨</div>
+        <div class="example-body">
+          <span class="example-tag">Styling</span>
+          <h3>Layouts Demo</h3>
+          <p>All 4 built-in themes in one demo: Glassmorphism, Minimal Flat, Material Design, and Modern Gradient — with icons and subtitles.</p>
+          <a href="examples/layouts_demo_output.html" target="_blank" class="example-link">Open Demo →</a>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-preview">🔄</div>
+        <div class="example-body">
+          <span class="example-tag">Morphing</span>
+          <h3>Graph Morph</h3>
+          <p>A simple 3-tier architecture scales up seamlessly. Nodes persist, split, and emerge with smooth transitions and smart matching.</p>
+          <a href="examples/morph_output.html" target="_blank" class="example-link">Open Demo →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="section-wrap">
+    <div class="section-label">Get Started</div>
+    <h2 class="section-title">Up and running in minutes</h2>
+
+    <div class="install-block">
+      <span class="install-cmd">$ pip install diagflow</span>
+      <button class="copy-btn" onclick="
+        navigator.clipboard.writeText('pip install diagflow').then(() => {
+          this.textContent = 'Copied!';
+          setTimeout(() => this.textContent = 'Copy', 2000);
+        });
+      ">Copy</button>
+    </div>
+
+    <div class="install-steps">
+      <div class="install-step">
+        <div class="step-num">1</div>
+        <p>Install from PyPI: <code>pip install diagflow</code> — or clone the repo and run <code>pip install -e .</code> for local development.</p>
+      </div>
+      <div class="install-step">
+        <div class="step-num">2</div>
+        <p>Import <code>Diagram</code>, <code>Node</code>, and <code>Edge</code> from <code>diagflow</code>. Create nodes, connect them, and build your steps.</p>
+      </div>
+      <div class="install-step">
+        <div class="step-num">3</div>
+        <p>Call <code>d.export("output.html")</code> and open the file in any browser. No server needed — share the single HTML file anywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    Built with ♥ by <a href="https://github.com/YOUR_USERNAME" target="_blank">Lucas Ziza</a>
+    &nbsp;·&nbsp; MIT License
+    &nbsp;·&nbsp; <a href="https://github.com/YOUR_USERNAME/diagflow" target="_blank">GitHub</a>
+  </p>
+</footer>
+
+<script>
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
