@@ -290,13 +290,6 @@ d.export("examples/api_flow_output.html")
 ```
 </details>
 
-<iframe
-  src="examples/api_flow_output.html"
-  width="100%"
-  height="420"
-  style="border:1px solid #21262d; border-radius:12px; display:block;"
-  title="API Flow example"
-></iframe>
 
 <br>
 
@@ -337,14 +330,6 @@ d.export("examples/auth_flow_output.html")
 ```
 </details>
 
-<iframe
-  src="examples/auth_flow_output.html"
-  width="100%"
-  height="400"
-  style="border:1px solid #21262d; border-radius:12px; display:block;"
-  title="JWT Auth Flow example"
-></iframe>
-
 <br>
 
 ---
@@ -372,13 +357,6 @@ Morph(d1, d2, duration=1.8, stagger=0.10).export("examples/morph_output.html")
 ```
 </details>
 
-<iframe
-  src="examples/morph_output.html"
-  width="100%"
-  height="460"
-  style="border:1px solid #21262d; border-radius:12px; display:block;"
-  title="Graph Morph example"
-></iframe>
 
 ---
 
@@ -417,10 +395,9 @@ diagflow/
 ## Roadmap
 
 - [ ] PDF export (frames via `reportlab` or `playwright`)
-- [ ] Video export (MP4 / GIF via FFmpeg headless render)
+- [ ] Video export (MP4 / GIF via FFmpeg headless render)+
 - [ ] Icon packs (AWS, Kubernetes, GCP node shapes)
 - [ ] Code block animations (syntax-highlighted code with line highlights)
-- [ ] Light theme support
 - [ ] Multi-state morph chains (`d1 → d2 → d3`)
 - [ ] LLM integration — generate diagrams from natural language
 

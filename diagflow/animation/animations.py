@@ -21,6 +21,38 @@ class FadeOut:
 
 
 @dataclass
+class ScaleIn:
+    target: str
+    at: float = 0.0
+    from_scale: float = 0.5
+
+    def to_dict(self) -> dict:
+        return {
+            "type": "scale_in",
+            "target": self.target,
+            "at": self.at,
+            "from_scale": self.from_scale,
+        }
+
+
+@dataclass
+class Pulse:
+    target: str
+    at: float = 0.0
+    scale: float = 1.15
+    duration: float = 0.6
+
+    def to_dict(self) -> dict:
+        return {
+            "type": "pulse",
+            "target": self.target,
+            "at": self.at,
+            "scale": self.scale,
+            "duration": self.duration,
+        }
+
+
+@dataclass
 class Highlight:
     target: str
     color: str = "#fbbf24"

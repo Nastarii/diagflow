@@ -8,60 +8,80 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0d1117;
+      background: #0a0e17;
       color: #e6edf3;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, system-ui, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 32px 16px;
-      gap: 20px;
+      gap: 18px;
     }
 
+    /* ── title ─────────────────────────────── */
     .diagram-title {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
-      letter-spacing: -0.4px;
+      letter-spacing: -0.5px;
       color: #e6edf3;
+      opacity: 0.9;
     }
 
+    /* ── card ──────────────────────────────── */
     .card {
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 8px 32px rgba(0,0,0,0.6),
+        0 2px 8px rgba(0,0,0,0.4);
     }
 
-    svg { display: block; max-width: 100%; }
+    svg { display: block; max-width: 100%; overflow: visible; }
 
     /* ── nodes ─────────────────────────────── */
-    .node-wrap { cursor: default; }
-    .node-bg {
-      rx: 10px; ry: 10px;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    .node-wrap {
+      cursor: default;
+      will-change: transform;
     }
+    .node-wrap.expandable { cursor: pointer; }
+    .node-bg { transition: filter 0.2s; }
     .node-label {
       fill: #fff;
       font-size: 13px;
       font-weight: 600;
-      text-anchor: middle;
-      dominant-baseline: middle;
       pointer-events: none;
       letter-spacing: 0.1px;
     }
+    .node-subtitle {
+      fill: rgba(255,255,255,0.55);
+      font-size: 10.5px;
+      font-weight: 400;
+      pointer-events: none;
+      letter-spacing: 0.2px;
+    }
+    .node-icon {
+      pointer-events: none;
+      dominant-baseline: middle;
+      text-anchor: middle;
+    }
+
+    /* ── layout: minimal — dark label text ─── */
+    .layout-minimal .node-label  { fill: #fff; }
+    .layout-minimal .node-subtitle { fill: rgba(255,255,255,0.6); }
 
     /* ── edges ─────────────────────────────── */
     .edge-path {
       fill: none;
-      stroke: #30363d;
-      stroke-width: 2;
+      stroke: #1f2937;
+      stroke-width: 1.8;
     }
     .edge-path.dashed { stroke-dasharray: 6 4; }
     .edge-label {
-      fill: #6e7681;
+      fill: #4b5563;
       font-size: 11px;
       text-anchor: middle;
     }
@@ -70,61 +90,86 @@
     .controls {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 14px 20px;
-      border-top: 1px solid #21262d;
+      gap: 16px;
+      padding: 14px 22px;
+      border-top: 1px solid #1f2937;
       background: #0d1117;
     }
 
     .btn {
-      padding: 7px 18px;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      background: #21262d;
-      color: #c9d1d9;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #9ca3af;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, transform 0.1s;
       white-space: nowrap;
       outline: none;
+      user-select: none;
     }
-    .btn:hover:not(:disabled) { background: #30363d; border-color: #6e7681; }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: #388bfd; }
+    .btn:hover:not(:disabled) {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+      transform: translateY(-1px);
+    }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-primary {
+      background: #1d4ed8;
+      border-color: #2563eb;
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
 
     .step-info { flex: 1; text-align: center; }
     .step-name {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       color: #e6edf3;
-      min-height: 22px;
-      transition: opacity 0.25s;
+      min-height: 20px;
+      transition: opacity 0.2s ease;
+      letter-spacing: -0.2px;
     }
-    .step-counter { font-size: 11px; color: #484f58; margin-top: 3px; }
+    .step-counter {
+      font-size: 11px;
+      color: #374151;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
 
     .dots {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       justify-content: center;
-      margin-top: 7px;
+      margin-top: 8px;
     }
     .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: #21262d;
-      border: 1px solid #30363d;
-      transition: background 0.25s, transform 0.25s, border-color 0.25s;
+      height: 4px;
+      border-radius: 2px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      transition: background 0.25s, width 0.3s cubic-bezier(0.34,1.56,0.64,1), border-color 0.25s;
+      width: 14px;
     }
-    .dot.done  { background: #1f6feb44; border-color: #1f6feb66; }
-    .dot.active { background: #388bfd; border-color: #58a6ff; transform: scale(1.5); }
+    .dot.done  { background: #1d4ed844; border-color: #1d4ed866; width: 14px; }
+    .dot.active { background: #3b82f6; border-color: #60a5fa; width: 24px; }
 
     .hint {
       font-size: 11px;
-      color: #21262d;
-      letter-spacing: 0.3px;
-      margin-top: -8px;
+      color: #1f2937;
+      letter-spacing: 0.4px;
+      margin-top: -6px;
     }
   </style>
 </head>
@@ -136,19 +181,38 @@
   <svg id="svg" viewBox="0 0 {{ width }} {{ height }}" width="{{ width }}" height="{{ height }}">
     <defs>
       <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-        <polygon points="0 0,8 3,0 6" fill="#30363d"/>
+        <polygon points="0 0,8 3,0 6" fill="#374151"/>
       </marker>
       <marker id="arr-msg" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-        <polygon points="0 0,8 3,0 6" fill="#58a6ff"/>
+        <polygon points="0 0,8 3,0 6" fill="#60a5fa"/>
       </marker>
-      <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur stdDeviation="4" result="blur"/>
+
+      <!-- glow filters -->
+      <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="5" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
-      <filter id="glow-sm" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="2" result="blur"/>
+      <filter id="glow-sm" x="-25%" y="-25%" width="150%" height="150%">
+        <feGaussianBlur stdDeviation="2.5" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
+      <filter id="glow-lg" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+
+      <!-- material elevation shadow -->
+      <filter id="shadow-md" x="-30%" y="-30%" width="160%" height="180%">
+        <feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#000" flood-opacity="0.5"/>
+      </filter>
+
+      <!-- gradient defs (one per gradient-layout node) -->
+      {% for node in nodes %}{% if node.layout == 'gradient' %}
+      <linearGradient id="grad_{{ node.id }}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="{{ node.color }}" stop-opacity="1"/>
+        <stop offset="100%" stop-color="{{ node.color }}" stop-opacity="0.55"/>
+      </linearGradient>
+      {% endif %}{% endfor %}
     </defs>
 
     <!-- edges (behind nodes) -->
@@ -165,24 +229,156 @@
 
     <!-- nodes -->
     {% for node in nodes %}
-    <g id="{{ node.id }}" opacity="0" class="node-wrap">
+    {# ── resolve layout properties ── #}
+    {% set lyt = node.layout %}
+    {% set h   = node.height %}
+    {% set cx  = node.x + NODE_W / 2 %}
+    {% set cy  = node.y + h / 2 %}
+
+    {% if lyt == 'glass' %}
+      {% set fill         = "white" %}
+      {% set fill_op      = 0.08 %}
+      {% set stroke_col   = node.color %}
+      {% set stroke_op    = 0.35 %}
+      {% set stroke_w     = 1 %}
+      {% set rx           = 14 %}
+      {% set has_hl       = true %}
+      {% set use_filter   = "none" %}
+      {% set hover_scale  = 1.06 %}
+      {% set hover_glow   = "true" %}
+    {% elif lyt == 'minimal' %}
+      {% set fill         = node.color %}
+      {% set fill_op      = 1.0 %}
+      {% set stroke_col   = node.color %}
+      {% set stroke_op    = 0 %}
+      {% set stroke_w     = 0 %}
+      {% set rx           = 6 %}
+      {% set has_hl       = false %}
+      {% set use_filter   = "none" %}
+      {% set hover_scale  = 1.03 %}
+      {% set hover_glow   = "false" %}
+    {% elif lyt == 'material' %}
+      {% set fill         = node.color %}
+      {% set fill_op      = 0.92 %}
+      {% set stroke_col   = node.color %}
+      {% set stroke_op    = 0 %}
+      {% set stroke_w     = 0 %}
+      {% set rx           = 8 %}
+      {% set has_hl       = false %}
+      {% set use_filter   = "url(#shadow-md)" %}
+      {% set hover_scale  = 1.03 %}
+      {% set hover_glow   = "false" %}
+    {% elif lyt == 'gradient' %}
+      {% set fill         = "url(#grad_" + node.id + ")" %}
+      {% set fill_op      = 1.0 %}
+      {% set stroke_col   = node.color %}
+      {% set stroke_op    = 0.3 %}
+      {% set stroke_w     = 1 %}
+      {% set rx           = 12 %}
+      {% set has_hl       = true %}
+      {% set use_filter   = "none" %}
+      {% set hover_scale  = 1.04 %}
+      {% set hover_glow   = "true" %}
+    {% else %}{# default #}
+      {% set fill         = node.color %}
+      {% set fill_op      = 0.18 %}
+      {% set stroke_col   = node.color %}
+      {% set stroke_op    = 0.7 %}
+      {% set stroke_w     = 1.5 %}
+      {% set rx           = 10 %}
+      {% set has_hl       = true %}
+      {% set use_filter   = "none" %}
+      {% set hover_scale  = 1.04 %}
+      {% set hover_glow   = "false" %}
+    {% endif %}
+
+    {# ── text anchor + positions ── #}
+    {% set has_icon = node.icon and node.icon != "" %}
+    {% set has_sub  = node.subtitle and node.subtitle != "" %}
+    {% set has_desc = node.description and node.description != "" %}
+    {% if has_icon %}
+      {% set text_x      = node.x + 36 %}
+      {% set text_anchor = "start" %}
+    {% else %}
+      {% set text_x      = cx %}
+      {% set text_anchor = "middle" %}
+    {% endif %}
+    {% if has_sub %}
+      {% set label_y = node.y + h * 0.38 %}
+      {% set sub_y   = node.y + h * 0.62 %}
+    {% else %}
+      {% set label_y = cy %}
+      {% set sub_y   = 0 %}
+    {% endif %}
+
+    {# chevron center (bottom-right of the base rect) #}
+    {% set chev_cx = node.x + NODE_W - 17 %}
+    {% set chev_cy = node.y + h - 13 %}
+
+    <g id="{{ node.id }}" opacity="0"
+       class="node-wrap layout-{{ lyt }}{% if has_desc %} expandable{% endif %}"
+       data-cx="{{ cx }}"
+       data-cy="{{ cy }}"
+       data-nx="{{ node.x }}"
+       data-ny="{{ node.y }}"
+       data-base-height="{{ h }}"
+       data-description="{{ (node.description or '') | e }}"
+       data-hover-scale="{{ hover_scale }}"
+       data-hover-glow="{{ hover_glow }}"
+       data-expanded="false">
+
       <rect class="node-bg"
             x="{{ node.x }}" y="{{ node.y }}"
-            width="{{ NODE_W }}" height="{{ NODE_H }}"
-            rx="10" ry="10"
-            fill="{{ node.color }}"
-            fill-opacity="0.18"
-            stroke="{{ node.color }}"
-            stroke-opacity="0.7"
-            stroke-width="1.5"/>
-      <!-- inner highlight -->
-      <rect x="{{ node.x + 1 }}" y="{{ node.y + 1 }}"
-            width="{{ NODE_W - 2 }}" height="20"
-            rx="9" ry="9"
-            fill="white" fill-opacity="0.05"/>
+            width="{{ NODE_W }}" height="{{ h }}"
+            rx="{{ rx }}" ry="{{ rx }}"
+            fill="{{ fill }}"
+            fill-opacity="{{ fill_op }}"
+            stroke="{{ stroke_col }}"
+            stroke-opacity="{{ stroke_op }}"
+            stroke-width="{{ stroke_w }}"
+            {% if use_filter != "none" %}filter="{{ use_filter }}"{% endif %}/>
+
+      {% if has_hl %}
+      <rect class="node-hl"
+            x="{{ node.x + 1 }}" y="{{ node.y + 1 }}"
+            width="{{ NODE_W - 2 }}" height="{{ [h * 0.35, 20] | max }}"
+            rx="{{ rx - 1 }}" ry="{{ rx - 1 }}"
+            fill="white" fill-opacity="0.06"
+            pointer-events="none"/>
+      {% endif %}
+
+      {% if has_icon %}
+      <text class="node-icon"
+            x="{{ node.x + 22 }}" y="{{ cy }}"
+            font-size="17"
+            dominant-baseline="middle"
+            text-anchor="middle"
+            pointer-events="none">{{ node.icon }}</text>
+      {% endif %}
+
       <text class="node-label"
-            x="{{ node.x + NODE_W / 2 }}"
-            y="{{ node.y + NODE_H / 2 }}">{{ node.label }}</text>
+            x="{{ text_x }}" y="{{ label_y }}"
+            text-anchor="{{ text_anchor }}"
+            dominant-baseline="middle">{{ node.label }}</text>
+
+      {% if has_sub %}
+      <text class="node-subtitle"
+            x="{{ text_x }}" y="{{ sub_y }}"
+            text-anchor="{{ text_anchor }}"
+            dominant-baseline="middle">{{ node.subtitle }}</text>
+      {% endif %}
+
+      {# ── expand chevron ── #}
+      {% if has_desc %}
+      <g class="node-chevron"
+         data-chevron-cx="{{ chev_cx }}"
+         data-chevron-cy="{{ chev_cy }}">
+        <path d="M {{ chev_cx - 4 }} {{ chev_cy - 2 }} L {{ chev_cx }} {{ chev_cy + 2 }} L {{ chev_cx + 4 }} {{ chev_cy - 2 }}"
+              stroke="white" stroke-opacity="0.35" stroke-width="1.5"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"
+              pointer-events="none"/>
+      </g>
+      {% endif %}
     </g>
     {% endfor %}
 
@@ -192,7 +388,12 @@
 
   {% if steps %}
   <div class="controls">
-    <button class="btn" id="btnPrev" onclick="goPrev()" disabled>← Prev</button>
+    <button class="btn" id="btnPrev" onclick="goPrev()" disabled>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M8 2L4 6L8 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Prev
+    </button>
     <div class="step-info">
       <div class="step-name" id="stepName">{{ steps[0].title if steps else '' }}</div>
       <div class="step-counter" id="stepCtr">0 / {{ steps | length }}</div>
@@ -200,7 +401,12 @@
         {% for s in steps %}<div class="dot" id="dot{{ loop.index0 }}"></div>{% endfor %}
       </div>
     </div>
-    <button class="btn btn-primary" id="btnNext" onclick="goNext()">Next →</button>
+    <button class="btn btn-primary" id="btnNext" onclick="goNext()">
+      Next
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
   {% endif %}
 </div>
@@ -217,16 +423,32 @@
 const D = {{ diagram_json | safe }};
 const NW = D.node_w, NH = D.node_h;
 
-const npos = {};   // id → {x,y,color}
+const npos = {};
 D.nodes.forEach(n => { npos[n.id] = n; });
 
 const origColor = {};
 D.nodes.forEach(n => { origColor[n.id] = n.color; });
 
+// ─── expand state ────────────────────────────────────────────────────────────
+const _svg      = document.getElementById('svg');
+const origSvgH  = parseFloat(_svg.getAttribute('height'));
+const origVB    = _svg.getAttribute('viewBox');
+
+const origEdgePath = {};
+D.edges.forEach(e => {
+  const p = document.querySelector('#' + e.id + ' path.edge-path');
+  if (p) origEdgePath[e.id] = p.getAttribute('d');
+});
+
+const yOff = {};
+D.nodes.forEach(n => { yOff[n.id] = 0; });
+
 // ─── state ───────────────────────────────────────────────────────────────────
 let cur = -1;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
+function nh(n) { return n.height || NH; }
+
 function cx(src, tgt) {
   const dx = tgt.x - src.x, dy = tgt.y - src.y;
   if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? src.x + NW : src.x;
@@ -234,8 +456,8 @@ function cx(src, tgt) {
 }
 function cy(src, tgt) {
   const dx = tgt.x - src.x, dy = tgt.y - src.y;
-  if (Math.abs(dx) >= Math.abs(dy)) return src.y + NH / 2;
-  return dy >= 0 ? src.y + NH : src.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return src.y + nh(src) / 2;
+  return dy >= 0 ? src.y + nh(src) : src.y;
 }
 function tx(src, tgt) {
   const dx = tgt.x - src.x, dy = tgt.y - src.y;
@@ -244,8 +466,8 @@ function tx(src, tgt) {
 }
 function ty(src, tgt) {
   const dx = tgt.x - src.x, dy = tgt.y - src.y;
-  if (Math.abs(dx) >= Math.abs(dy)) return tgt.y + NH / 2;
-  return dy >= 0 ? tgt.y : tgt.y + NH;
+  if (Math.abs(dx) >= Math.abs(dy)) return tgt.y + nh(tgt) / 2;
+  return dy >= 0 ? tgt.y : tgt.y + nh(tgt);
 }
 
 // ─── animation engine ────────────────────────────────────────────────────────
@@ -258,23 +480,58 @@ function playStep(idx) {
     const t = anim.at || 0;
 
     if (anim.type === 'fade_in') {
-      tl.to('#' + anim.target, { opacity: 1, duration: 0.45, ease: 'power2.out' }, t);
+      tl.to('#' + anim.target, { opacity: 1, duration: 0.4, ease: 'power2.out' }, t);
+
+    } else if (anim.type === 'scale_in') {
+      const el = document.getElementById(anim.target);
+      if (!el) return;
+      const ncx = el.dataset.cx || 0, ncy = el.dataset.cy || 0;
+      gsap.set(el, { opacity: 0, scale: anim.from_scale || 0.5, svgOrigin: ncx + ' ' + ncy });
+      tl.to(el, {
+        opacity: 1, scale: 1,
+        duration: 0.45, ease: 'back.out(1.7)',
+        svgOrigin: ncx + ' ' + ncy,
+      }, t);
+
+    } else if (anim.type === 'pulse') {
+      const el = document.getElementById(anim.target);
+      if (!el) return;
+      const ncx = el.dataset.cx || 0, ncy = el.dataset.cy || 0;
+      const dur = anim.duration || 0.6;
+      tl.to(el, {
+        scale: anim.scale || 1.15,
+        duration: dur * 0.4, ease: 'power2.out',
+        svgOrigin: ncx + ' ' + ncy,
+      }, t)
+        .to(el, {
+          scale: 1,
+          duration: dur * 0.6, ease: 'elastic.out(1,0.4)',
+          svgOrigin: ncx + ' ' + ncy,
+        }, t + dur * 0.4);
 
     } else if (anim.type === 'fade_out') {
-      tl.to('#' + anim.target, { opacity: 0, duration: 0.35, ease: 'power2.in' }, t);
+      tl.to('#' + anim.target, { opacity: 0, duration: 0.3, ease: 'power2.in' }, t);
 
     } else if (anim.type === 'highlight') {
       const sel = '#' + anim.target + ' rect.node-bg';
-      tl.to(sel, { attr: { stroke: anim.color, 'stroke-opacity': 1, 'stroke-width': 2.5 },
-                   filter: 'url(#glow)', duration: 0.25 }, t)
-        .to(sel, { attr: { stroke: origColor[anim.target], 'stroke-opacity': 0.7, 'stroke-width': 1.5 },
-                   filter: 'none', duration: 0.4 }, t + (anim.duration || 1));
+      tl.to(sel, {
+        attr: { stroke: anim.color, 'stroke-opacity': 1, 'stroke-width': 2.5 },
+        filter: 'url(#glow)', duration: 0.22,
+      }, t)
+        .to(sel, {
+          attr: {
+            stroke: origColor[anim.target],
+            'stroke-opacity': 0.7,
+            'stroke-width': 1.5,
+          },
+          filter: 'none', duration: 0.4,
+        }, t + (anim.duration || 1));
 
     } else if (anim.type === 'send_message') {
       const s = npos[anim.from], tg = npos[anim.to];
       if (!s || !tg) return;
-      const x1 = cx(s, tg) + NW * 0, y1 = cy(s, tg);
-      const x2 = tx(s, tg),          y2 = ty(s, tg);
+      const x1 = cx(s, tg), y1 = cy(s, tg);
+      const x2 = tx(s, tg), y2 = ty(s, tg);
 
       const id = 'msg_' + Math.random().toString(36).slice(2, 8);
       const ns = 'http://www.w3.org/2000/svg';
@@ -284,7 +541,7 @@ function playStep(idx) {
       g.id = id;
 
       const lbl = anim.label || '';
-      const bw = Math.max(lbl.length * 7 + 20, 28);
+      const bw = Math.max(lbl.length * 7 + 22, 30);
       const bh = 22;
 
       const pill = document.createElementNS(ns, 'rect');
@@ -293,8 +550,8 @@ function playStep(idx) {
       pill.setAttribute('x', -bw / 2);
       pill.setAttribute('y', -bh / 2);
       pill.setAttribute('rx', bh / 2);
-      pill.setAttribute('fill', '#1f6feb');
-      pill.setAttribute('stroke', '#388bfd');
+      pill.setAttribute('fill', '#1d4ed8');
+      pill.setAttribute('stroke', '#3b82f6');
       pill.setAttribute('stroke-width', '1');
       pill.setAttribute('filter', 'url(#glow-sm)');
 
@@ -324,25 +581,301 @@ function applyInstant(idx) {
   const step = D.steps[idx];
   if (!step) return;
   step.animations.forEach(a => {
-    if (a.type === 'fade_in')  gsap.set('#' + a.target, { opacity: 1 });
-    if (a.type === 'fade_out') gsap.set('#' + a.target, { opacity: 0 });
+    if (a.type === 'fade_in' || a.type === 'scale_in') {
+      const el = document.getElementById(a.target);
+      if (el) gsap.set(el, { opacity: 1, scale: 1 });
+    }
+    if (a.type === 'fade_out') {
+      const el = document.getElementById(a.target);
+      if (el) gsap.set(el, { opacity: 0 });
+    }
   });
 }
 
 function resetAll() {
   gsap.killTweensOf('*');
   document.getElementById('msgLayer').innerHTML = '';
+
+  // reset SVG dimensions
+  const svg = document.getElementById('svg');
+  svg.setAttribute('height', origSvgH);
+  svg.setAttribute('viewBox', origVB);
+
+  // reset every node: position, expand state, highlight
   D.nodes.forEach(n => {
-    gsap.set('#' + n.id, { opacity: 0 });
-    const r = document.querySelector('#' + n.id + ' rect.node-bg');
-    if (r) {
-      r.setAttribute('stroke', origColor[n.id]);
-      r.setAttribute('stroke-opacity', '0.7');
-      r.setAttribute('stroke-width', '1.5');
-      r.removeAttribute('filter');
+    yOff[n.id] = 0;
+    const el = document.getElementById(n.id);
+    if (!el) return;
+    gsap.set(el, { opacity: 0, scale: 1, y: 0 });
+    el.dataset.expanded   = 'false';
+    el.dataset.shiftedIds = '[]';
+
+    const bg = el.querySelector('rect.node-bg');
+    if (bg) {
+      gsap.set(bg, { attr: { height: parseFloat(el.dataset.baseHeight || NH) } });
+      bg.setAttribute('stroke', origColor[n.id]);
+      bg.setAttribute('stroke-opacity', '0.7');
+      bg.setAttribute('stroke-width', '1.5');
+      bg.removeAttribute('filter');
+    }
+    const dg = el.querySelector('.node-desc-group');
+    if (dg) gsap.set(dg, { opacity: 0 });
+    const chev = el.querySelector('.node-chevron');
+    if (chev) {
+      const ccx = parseFloat(chev.dataset.chevronCx || 0);
+      const ccy = parseFloat(chev.dataset.chevronCy || 0);
+      gsap.set(chev, { rotation: 0, svgOrigin: `${ccx} ${ccy}` });
     }
   });
-  D.edges.forEach(e => gsap.set('#' + e.id, { opacity: 0 }));
+
+  // restore original edge paths
+  D.edges.forEach(e => {
+    const pathEl = document.querySelector('#' + e.id + ' path.edge-path');
+    if (pathEl && origEdgePath[e.id]) pathEl.setAttribute('d', origEdgePath[e.id]);
+    const lblEl = document.querySelector('#' + e.id + ' text.edge-label');
+    // label positions are restored implicitly (they were never changed in place)
+    gsap.set('#' + e.id, { opacity: 0 });
+  });
+}
+
+// ─── reflow helpers ──────────────────────────────────────────────────────────
+const CP_JS = 50;
+
+function apos(id) {
+  const n = npos[id];
+  return { ...n, y: n.y + (yOff[id] || 0) };
+}
+
+function edgeBezierFull(srcId, tgtId) {
+  const s = apos(srcId), t = apos(tgtId);
+  const sh = s.height || NH, th = t.height || NH;
+  const dx = t.x - s.x, dy = t.y - s.y;
+  let x1, y1, x2, y2, cx1, cy1, cx2, cy2;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    if (dx >= 0) {
+      x1 = s.x + NW; y1 = s.y + sh / 2; x2 = t.x;      y2 = t.y + th / 2;
+      cx1 = x1 + CP_JS; cy1 = y1; cx2 = x2 - CP_JS; cy2 = y2;
+    } else {
+      x1 = s.x;       y1 = s.y + sh / 2; x2 = t.x + NW; y2 = t.y + th / 2;
+      cx1 = x1 - CP_JS; cy1 = y1; cx2 = x2 + CP_JS; cy2 = y2;
+    }
+  } else {
+    if (dy >= 0) {
+      x1 = s.x + NW / 2; y1 = s.y + sh; x2 = t.x + NW / 2; y2 = t.y;
+      cx1 = x1; cy1 = y1 + CP_JS; cx2 = x2; cy2 = y2 - CP_JS;
+    } else {
+      x1 = s.x + NW / 2; y1 = s.y;      x2 = t.x + NW / 2; y2 = t.y + th;
+      cx1 = x1; cy1 = y1 - CP_JS; cx2 = x2; cy2 = y2 + CP_JS;
+    }
+  }
+
+  return {
+    d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)} ${cx2.toFixed(1)} ${cy2.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`,
+    midX: (x1 + x2) / 2,
+    midY: (y1 + y2) / 2 - 14,
+  };
+}
+
+function snapEdges(shiftedSet) {
+  D.edges.forEach(e => {
+    if (!shiftedSet.has(e.source) && !shiftedSet.has(e.target)) return;
+    const pathEl = document.querySelector('#' + e.id + ' path.edge-path');
+    if (!pathEl) return;
+    const { d, midX, midY } = edgeBezierFull(e.source, e.target);
+    pathEl.setAttribute('d', d);
+    const lblEl = document.querySelector('#' + e.id + ' text.edge-label');
+    if (lblEl) { lblEl.setAttribute('x', midX); lblEl.setAttribute('y', midY); }
+  });
+}
+
+function reflowEdges(shiftedSet, dur) {
+  const affected = D.edges.filter(e => shiftedSet.has(e.source) || shiftedSet.has(e.target));
+  if (!affected.length) return;
+
+  // snapshot visibility BEFORE fade-out so we know which edges to restore
+  const wasVisible = new Map();
+  affected.forEach(e => {
+    const edgeEl = document.getElementById(e.id);
+    wasVisible.set(e.id, edgeEl ? parseFloat(gsap.getProperty(edgeEl, 'opacity')) > 0.4 : false);
+  });
+
+  affected.forEach(e => {
+    if (wasVisible.get(e.id))
+      gsap.to('#' + e.id, { opacity: 0, duration: 0.08, overwrite: 'auto' });
+  });
+
+  gsap.delayedCall(dur * 0.55, () => {
+    snapEdges(shiftedSet);
+    affected.forEach(e => {
+      if (wasVisible.get(e.id))
+        gsap.to('#' + e.id, { opacity: 1, duration: 0.18 });
+    });
+  });
+}
+
+function resizeSvg(delta) {
+  const svg = document.getElementById('svg');
+  const newH = parseFloat(svg.getAttribute('height')) + delta;
+  const [vx, vy, vw] = svg.getAttribute('viewBox').split(' ').map(Number);
+  svg.setAttribute('height', newH);
+  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${newH}`);
+}
+
+// ─── expand / collapse ────────────────────────────────────────────────────────
+function wrapText(text, maxChars) {
+  const words = text.split(' ');
+  const lines = [];
+  let curr = '';
+  for (const w of words) {
+    const test = curr ? curr + ' ' + w : w;
+    if (test.length > maxChars && curr) { lines.push(curr); curr = w; }
+    else curr = test;
+  }
+  if (curr) lines.push(curr);
+  return lines;
+}
+
+function toggleExpand(el) {
+  const desc = el.dataset.description;
+  if (!desc) return;
+
+  const isExpanded = el.dataset.expanded === 'true';
+  const baseH = parseFloat(el.dataset.baseHeight);
+  const nx    = parseFloat(el.dataset.nx);
+  const ny    = parseFloat(el.dataset.ny);
+  const bg    = el.querySelector('rect.node-bg');
+  const chev  = el.querySelector('.node-chevron');
+  const ns    = 'http://www.w3.org/2000/svg';
+  const DUR   = 0.38;
+
+  // lift above siblings in SVG stacking order
+  el.parentNode.appendChild(el);
+
+  if (!isExpanded) {
+    // ── build description group (lazy, first expand only) ────────────────────
+    let dg = el.querySelector('.node-desc-group');
+    if (!dg) {
+      const maxCh = Math.floor((NW - 26) / 6.8);
+      const lines = wrapText(desc, maxCh);
+      el.dataset.expandH = baseH + lines.length * 15 + 22;
+
+      dg = document.createElementNS(ns, 'g');
+      dg.classList.add('node-desc-group');
+      gsap.set(dg, { opacity: 0 });
+
+      const sep = document.createElementNS(ns, 'line');
+      sep.setAttribute('x1', nx + 10);         sep.setAttribute('y1', ny + baseH + 5);
+      sep.setAttribute('x2', nx + NW - 10);    sep.setAttribute('y2', ny + baseH + 5);
+      sep.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+      sep.setAttribute('stroke-width', '1');
+      dg.appendChild(sep);
+
+      const txt = document.createElementNS(ns, 'text');
+      txt.setAttribute('fill', 'rgba(255,255,255,0.55)');
+      txt.setAttribute('font-size', '10.5');
+      txt.setAttribute('font-weight', '400');
+      txt.setAttribute('font-family', 'inherit');
+      txt.setAttribute('pointer-events', 'none');
+      lines.forEach((line, i) => {
+        const ts = document.createElementNS(ns, 'tspan');
+        ts.setAttribute('x', nx + 12);
+        ts.setAttribute('y', ny + baseH + 19 + i * 15);
+        ts.textContent = line;
+        txt.appendChild(ts);
+      });
+      dg.appendChild(txt);
+      el.appendChild(dg);
+    }
+
+    const expandH = parseFloat(el.dataset.expandH);
+    const delta   = expandH - baseH;
+    el.dataset.expanded = 'true';
+    el.dataset.delta    = delta;
+
+    // ── expand rect ──────────────────────────────────────────────────────────
+    gsap.to(bg, { attr: { height: expandH }, duration: DUR, ease: 'power3.out' });
+    gsap.to(dg, { opacity: 1, duration: 0.28, delay: 0.18, ease: 'power2.out' });
+    if (chev) {
+      const ccx = parseFloat(chev.dataset.chevronCx);
+      const ccy = parseFloat(chev.dataset.chevronCy);
+      gsap.to(chev, { rotation: 180, svgOrigin: `${ccx} ${ccy}`, duration: 0.3, ease: 'power2.inOut' });
+    }
+
+    // ── push nodes below down (CSS translateY — GPU compositor) ─────────────
+    const myBottom = ny + (yOff[el.id] || 0) + baseH;
+    const toShift  = D.nodes
+      .filter(n => n.id !== el.id && (n.y + (yOff[n.id] || 0)) > myBottom - 8)
+      .map(n => n.id);
+    el.dataset.shiftedIds = JSON.stringify(toShift);
+
+    toShift.forEach(id => {
+      yOff[id] += delta;
+      const nodeEl = document.getElementById(id);
+      if (nodeEl) gsap.to(nodeEl, { y: yOff[id], duration: DUR, ease: 'power3.out' });
+    });
+
+    resizeSvg(delta);
+    reflowEdges(new Set([el.id, ...toShift]), DUR);
+
+  } else {
+    // ── collapse ─────────────────────────────────────────────────────────────
+    el.dataset.expanded = 'false';
+    const delta   = parseFloat(el.dataset.delta || 0);
+    const toShift = JSON.parse(el.dataset.shiftedIds || '[]');
+    const dg      = el.querySelector('.node-desc-group');
+
+    gsap.to(bg, { attr: { height: baseH }, duration: DUR * 0.8, ease: 'power3.in' });
+    if (dg) gsap.to(dg, { opacity: 0, duration: 0.12 });
+    if (chev) {
+      const ccx = parseFloat(chev.dataset.chevronCx);
+      const ccy = parseFloat(chev.dataset.chevronCy);
+      gsap.to(chev, { rotation: 0, svgOrigin: `${ccx} ${ccy}`, duration: 0.28, ease: 'power2.inOut' });
+    }
+
+    toShift.forEach(id => {
+      yOff[id] -= delta;
+      const nodeEl = document.getElementById(id);
+      if (nodeEl) gsap.to(nodeEl, { y: yOff[id], duration: DUR, ease: 'power3.out' });
+    });
+
+    resizeSvg(-delta);
+    reflowEdges(new Set([el.id, ...toShift]), DUR * 0.8);
+  }
+}
+
+function setupExpand() {
+  document.querySelectorAll('.node-wrap.expandable').forEach(el => {
+    el.addEventListener('click', () => {
+      if (parseFloat(gsap.getProperty(el, 'opacity')) < 0.3) return;
+      toggleExpand(el);
+    });
+  });
+}
+
+// ─── hover effects ───────────────────────────────────────────────────────────
+function setupHover() {
+  document.querySelectorAll('.node-wrap').forEach(el => {
+    const hoverScale = parseFloat(el.dataset.hoverScale || '1.04');
+    const hoverGlow  = el.dataset.hoverGlow === 'true';
+    const ncx = el.dataset.cx || '0';
+    const ncy = el.dataset.cy || '0';
+    const origin = ncx + ' ' + ncy;
+
+    el.addEventListener('mouseenter', () => {
+      if (parseFloat(gsap.getProperty(el, 'opacity')) < 0.3) return;
+      gsap.to(el, { scale: hoverScale, duration: 0.18, ease: 'power2.out', svgOrigin: origin });
+      if (hoverGlow) {
+        const bg = el.querySelector('rect.node-bg');
+        if (bg) gsap.to(bg, { filter: 'url(#glow)', duration: 0.18 });
+      }
+    });
+    el.addEventListener('mouseleave', () => {
+      gsap.to(el, { scale: 1, duration: 0.22, ease: 'power2.inOut', svgOrigin: origin });
+      const bg = el.querySelector('rect.node-bg');
+      if (bg) gsap.to(bg, { filter: 'none', duration: 0.22 });
+    });
+  });
 }
 
 // ─── navigation ──────────────────────────────────────────────────────────────
@@ -362,7 +895,7 @@ function updateUI() {
   D.steps.forEach((_, i) => {
     const d = document.getElementById('dot' + i);
     if (!d) return;
-    if (i < cur)       d.className = 'dot done';
+    if (i < cur)        d.className = 'dot done';
     else if (i === cur) d.className = 'dot active';
     else                d.className = 'dot';
   });
@@ -392,6 +925,8 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── boot ─────────────────────────────────────────────────────────────────────
+setupHover();
+setupExpand();
 goNext();
 </script>
 </body>

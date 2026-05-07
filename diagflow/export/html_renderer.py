@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from diagflow.core.diagram import Diagram
 
-NODE_W = 140
-NODE_H = 56
+from diagflow.core.node import NODE_W, NODE_H
+
 PADDING = 60
 CP = 50  # bezier control-point offset
 
@@ -20,7 +20,7 @@ def render_html(diagram: "Diagram") -> str:
     edges = diagram.edges
 
     max_x = max((n.x for n in nodes), default=0) + NODE_W + PADDING
-    max_y = max((n.y for n in nodes), default=0) + NODE_H + PADDING
+    max_y = max((n.y + n.height for n in nodes), default=0) + PADDING
 
     node_map = {n.id: n for n in nodes}
     edge_data = []
@@ -65,29 +65,32 @@ def render_html(diagram: "Diagram") -> str:
 
 def _bezier(src, tgt) -> tuple[str, float, float, float, float]:
     """Return (svg path_d, x1, y1, x2, y2) for a bezier edge."""
+    src_h = getattr(src, 'height', NODE_H)
+    tgt_h = getattr(tgt, 'height', NODE_H)
+
     dx = tgt.x - src.x
     dy = tgt.y - src.y
 
     if abs(dx) >= abs(dy):
         if dx >= 0:
-            x1, y1 = src.x + NODE_W, src.y + NODE_H / 2
-            x2, y2 = tgt.x, tgt.y + NODE_H / 2
+            x1, y1 = src.x + NODE_W, src.y + src_h / 2
+            x2, y2 = tgt.x, tgt.y + tgt_h / 2
             cx1, cy1 = x1 + CP, y1
             cx2, cy2 = x2 - CP, y2
         else:
-            x1, y1 = src.x, src.y + NODE_H / 2
-            x2, y2 = tgt.x + NODE_W, tgt.y + NODE_H / 2
+            x1, y1 = src.x, src.y + src_h / 2
+            x2, y2 = tgt.x + NODE_W, tgt.y + tgt_h / 2
             cx1, cy1 = x1 - CP, y1
             cx2, cy2 = x2 + CP, y2
     else:
         if dy >= 0:
-            x1, y1 = src.x + NODE_W / 2, src.y + NODE_H
+            x1, y1 = src.x + NODE_W / 2, src.y + src_h
             x2, y2 = tgt.x + NODE_W / 2, tgt.y
             cx1, cy1 = x1, y1 + CP
             cx2, cy2 = x2, y2 - CP
         else:
             x1, y1 = src.x + NODE_W / 2, src.y
-            x2, y2 = tgt.x + NODE_W / 2, tgt.y + NODE_H
+            x2, y2 = tgt.x + NODE_W / 2, tgt.y + tgt_h
             cx1, cy1 = x1, y1 - CP
             cx2, cy2 = x2, y2 + CP
 
